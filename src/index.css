@@ -9,32 +9,52 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 225 15% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 225 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 225 15% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* HUE University Navy Blue */
+    --primary: 224 47% 25%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* HUE University Gold */
+    --secondary: 45 85% 55%;
+    --secondary-foreground: 225 15% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 8% 46%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 45 85% 55%;
+    --accent-foreground: 225 15% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 224 47% 25%;
+
+    /* Custom HUE Design Tokens */
+    --hue-navy: 224 47% 25%;
+    --hue-gold: 45 85% 55%;
+    --hue-light-gold: 45 85% 65%;
+    --hue-dark-navy: 224 47% 15%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--hue-navy)), hsl(var(--hue-dark-navy)));
+    --gradient-gold: linear-gradient(135deg, hsl(var(--hue-gold)), hsl(var(--hue-light-gold)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--hue-navy)) 0%, hsl(var(--hue-dark-navy)) 100%);
+    
+    /* Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(var(--hue-navy) / 0.3);
+    --shadow-gold: 0 4px 20px -4px hsl(var(--hue-gold) / 0.4);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.5rem;
 
@@ -56,33 +76,44 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 225 25% 8%;
+    --foreground: 0 0% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 225 25% 10%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 225 25% 10%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 45 85% 55%;
+    --primary-foreground: 225 25% 8%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 225 25% 15%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 225 25% 15%;
+    --muted-foreground: 220 8% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 45 85% 55%;
+    --accent-foreground: 225 25% 8%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 95%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 225 25% 20%;
+    --input: 225 25% 20%;
+    --ring: 45 85% 55%;
+
+    /* Dark mode custom tokens */
+    --hue-navy: 45 85% 55%;
+    --hue-gold: 45 85% 60%;
+    --hue-light-gold: 45 85% 70%;
+    --hue-dark-navy: 225 25% 8%;
+    
+    /* Dark gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--hue-dark-navy)), hsl(225 25% 5%));
+    --gradient-gold: linear-gradient(135deg, hsl(var(--hue-gold)), hsl(var(--hue-light-gold)));
+    --gradient-hero: linear-gradient(135deg, hsl(225 25% 8%) 0%, hsl(225 25% 5%) 100%);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
