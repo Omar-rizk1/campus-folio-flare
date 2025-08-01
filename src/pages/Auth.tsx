@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, EyeOff, Mail, Lock, User, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const majors = [
   "Computer Science",
@@ -20,6 +22,8 @@ const majors = [
 
 const Auth = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, signIn, signUp } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -37,26 +41,37 @@ const Auth = () => {
     confirmPassword: ""
   });
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const { error } = await signIn(loginData.email, loginData.password);
       
-      toast({
-        title: "Login successful!",
-        description: "Welcome back to HUE Projects.",
-      });
-      
-      // In a real app, this would redirect to dashboard or home
-      window.location.href = "/";
-      
+      if (error) {
+        toast({
+          title: "Login failed",
+          description: error.message || "Invalid email or password. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Login successful!",
+          description: "Welcome back to HUE Projects.",
+        });
+        navigate("/");
+      }
     } catch (error) {
       toast({
         title: "Login failed",
-        description: "Invalid email or password. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -88,27 +103,34 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const { error } = await signUp(signupData.email, signupData.password, signupData.name);
       
-      toast({
-        title: "Account created successfully!",
-        description: "Please check your email to verify your account.",
-      });
-      
-      // Reset form
-      setSignupData({
-        name: "",
-        email: "",
-        studentId: "",
-        major: "",
-        password: "",
-        confirmPassword: ""
-      });
-      
+      if (error) {
+        toast({
+          title: "Registration failed",
+          description: error.message || "Something went wrong. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Account created successfully!",
+          description: "Please check your email to verify your account.",
+        });
+        
+        // Reset form
+        setSignupData({
+          name: "",
+          email: "",
+          studentId: "",
+          major: "",
+          password: "",
+          confirmPassword: ""
+        });
+      }
     } catch (error) {
       toast({
         title: "Registration failed",
-        description: "Something went wrong. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {

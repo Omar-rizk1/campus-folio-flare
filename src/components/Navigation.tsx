@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, Upload, Search, BarChart3, Moon, Sun } from "lucide-react";
+import { Menu, X, User, Upload, Search, BarChart3, Moon, Sun, LogOut } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { user, signOut } = useAuth();
 
   const navigation = [
     { name: "Home", href: "/", icon: null },
@@ -18,6 +21,11 @@ export const Navigation = () => {
   ];
 
   const isActive = (href: string) => location.pathname === href;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50 backdrop-blur-md">
@@ -80,12 +88,26 @@ export const Navigation = () => {
 
             {/* Auth Buttons */}
             <div className="hidden md:flex items-center space-x-2">
-              <Button variant="outline" size="sm">
-                Login
-              </Button>
-              <Button variant="hero" size="sm">
-                Sign Up
-              </Button>
+              {user ? (
+                <>
+                  <span className="text-sm text-muted-foreground">
+                    Welcome, {user.user_metadata?.full_name || user.email}
+                  </span>
+                  <Button variant="outline" size="sm" onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4 mr-1" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
+                    Login
+                  </Button>
+                  <Button variant="hero" size="sm" onClick={() => navigate("/auth")}>
+                    Sign Up
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Mobile menu button */}
@@ -129,12 +151,21 @@ export const Navigation = () => {
                 );
               })}
               <div className="flex flex-col space-y-2 pt-3 border-t border-border">
-                <Button variant="outline" size="sm" className="w-full">
-                  Login
-                </Button>
-                <Button variant="hero" size="sm" className="w-full">
-                  Sign Up
-                </Button>
+                {user ? (
+                  <Button variant="outline" size="sm" className="w-full" onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4 mr-1" />
+                    Sign Out
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => navigate("/auth")}>
+                      Login
+                    </Button>
+                    <Button variant="hero" size="sm" className="w-full" onClick={() => navigate("/auth")}>
+                      Sign Up
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
