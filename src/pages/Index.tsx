@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,13 +18,17 @@ const Index = () => {
             and contribute to the growing community at Horus University Egypt.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="gold" size="lg" className="text-lg px-8">
-              <Upload className="mr-2 h-5 w-5" />
-              Upload Your Project
+            <Button variant="gold" size="lg" className="text-lg px-8" asChild>
+              <Link to="/upload">
+                <Upload className="mr-2 h-5 w-5" />
+                Upload Your Project
+              </Link>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 border-white text-white hover:bg-white hover:text-hue-navy">
-              <Search className="mr-2 h-5 w-5" />
-              Explore Projects
+            <Button variant="outline" size="lg" className="text-lg px-8 border-white text-white hover:bg-white hover:text-hue-navy" asChild>
+              <Link to="/projects">
+                <Search className="mr-2 h-5 w-5" />
+                Explore Projects
+              </Link>
             </Button>
           </div>
         </div>
@@ -114,9 +119,11 @@ const Index = () => {
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Join the HUE community and start showcasing your projects today
           </p>
-          <Button variant="hero" size="lg" className="text-lg px-8">
-            Get Started Now
-            <ArrowRight className="ml-2 h-5 w-5" />
+          <Button variant="hero" size="lg" className="text-lg px-8" asChild>
+            <Link to="/projects">
+              Get Started Now
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
           </Button>
         </div>
       </section>

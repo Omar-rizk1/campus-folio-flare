@@ -1,11 +1,14 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload as UploadIcon, FileText, Video, AlertCircle } from "lucide-react";
+import { Upload as UploadIcon, Image, Video, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const majors = [
   "Computer Science",
@@ -20,6 +23,8 @@ const majors = [
 
 const Upload = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -40,10 +45,11 @@ const Upload = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.type !== "application/pdf") {
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+      if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Invalid file type",
-          description: "Please upload a PDF file only.",
+          description: "Please upload an image file (JPEG, PNG, GIF, or WebP).",
           variant: "destructive"
         });
         return;
@@ -69,7 +75,16 @@ const Upload = () => {
     if (!formData.title || !formData.description || !formData.major || !formData.file) {
       toast({
         title: "Missing required fields",
-        description: "Please fill in all required fields and upload a PDF file.",
+        description: "Please fill in all required fields and upload an image file.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to upload a project.",
         variant: "destructive"
       });
       return;
@@ -77,13 +92,44 @@ const Upload = () => {
 
     setIsUploading(true);
 
-    // Simulate upload process
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Upload image to Supabase storage
+      const fileExt = formData.file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('project-images')
+        .upload(filePath, formData.file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL for the uploaded image
+      const { data: { publicUrl } } = supabase.storage
+        .from('project-images')
+        .getPublicUrl(filePath);
+
+      // Save project to database
+      const { error: dbError } = await supabase
+        .from('projects')
+        .insert({
+          user_id: user.id,
+          title: formData.title,
+          description: formData.description,
+          department: formData.major,
+          file_url: publicUrl,
+          video_url: formData.videoLink || null
+        });
+
+      if (dbError) {
+        throw dbError;
+      }
       
       toast({
         title: "Project uploaded successfully!",
-        description: "Your project has been submitted for review.",
+        description: "Your project has been submitted and is now visible in your profile.",
       });
 
       // Reset form
@@ -99,7 +145,11 @@ const Upload = () => {
       const fileInput = document.getElementById("file-upload") as HTMLInputElement;
       if (fileInput) fileInput.value = "";
 
+      // Navigate to profile page
+      navigate("/profile");
+
     } catch (error) {
+      console.error('Upload error:', error);
       toast({
         title: "Upload failed",
         description: "There was an error uploading your project. Please try again.",
@@ -184,17 +234,17 @@ const Upload = () => {
 
               {/* File Upload */}
               <div className="space-y-2">
-                <Label htmlFor="file-upload">Project PDF *</Label>
+                <Label htmlFor="file-upload">Project Image *</Label>
                 <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <Image className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Upload your project as a PDF file (max 10MB)
+                      Upload an image of your project (JPEG, PNG, GIF, or WebP - max 10MB)
                     </p>
                     <Input
                       id="file-upload"
                       type="file"
-                      accept=".pdf"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                       onChange={handleFileChange}
                       className="max-w-xs mx-auto"
                     />
@@ -234,9 +284,9 @@ const Upload = () => {
                   <div className="text-sm">
                     <p className="font-medium mb-1">Before submitting:</p>
                     <ul className="text-muted-foreground space-y-1">
-                      <li>• Ensure your PDF is well-formatted and readable</li>
-                      <li>• Include your name and student ID in the document</li>
-                      <li>• Projects will be reviewed before appearing publicly</li>
+                      <li>• Ensure your image clearly shows your project</li>
+                      <li>• Use high-quality images for better visibility</li>
+                      <li>• Projects are immediately visible after upload</li>
                     </ul>
                   </div>
                 </div>

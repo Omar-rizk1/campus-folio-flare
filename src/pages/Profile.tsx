@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,77 +7,138 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Edit3, Save, X, Eye, Download, Calendar, Book } from "lucide-react";
+import { User, Edit3, Save, X, Eye, Download, Calendar, Book, Loader2, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock user data
-const mockUser = {
-  id: "1",
-  name: "Ahmed Hassan",
-  email: "ahmed.hassan@hue.edu.eg",
-  studentId: "CS2021001",
-  major: "Computer Science",
-  year: "4th Year",
-  avatar: "",
-  projects: [
-    {
-      id: 1,
-      title: "AI-Powered Healthcare System",
-      description: "A machine learning application for medical diagnosis assistance",
-      date: "2024-01-15",
-      status: "Published",
-      views: 42
-    },
-    {
-      id: 2,
-      title: "Smart Campus Management",
-      description: "IoT-based system for efficient campus resource management",
-      date: "2024-01-08",
-      status: "Under Review",
-      views: 0
-    }
-  ]
-};
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  created_at: string;
+  file_url: string | null;
+  video_url: string | null;
+  department: string;
+}
+
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  department: string | null;
+  user_id: string;
+}
 
 const Profile = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [userInfo, setUserInfo] = useState({
-    name: mockUser.name,
-    email: mockUser.email,
-    major: mockUser.major,
-    year: mockUser.year
+    name: "",
+    department: ""
   });
 
-  const handleSave = () => {
-    // In a real app, this would make an API call
-    toast({
-      title: "Profile updated",
-      description: "Your profile information has been saved successfully.",
-    });
-    setIsEditing(false);
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+      fetchProjects();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setProfile(data);
+        setUserInfo({
+          name: data.full_name || "",
+          department: data.department || ""
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProjects = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          full_name: userInfo.name,
+          department: userInfo.department
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile information has been saved successfully.",
+      });
+      setIsEditing(false);
+      fetchProfile();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Update failed",
+        description: "There was an error updating your profile. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleCancel = () => {
     setUserInfo({
-      name: mockUser.name,
-      email: mockUser.email,
-      major: mockUser.major,
-      year: mockUser.year
+      name: profile?.full_name || "",
+      department: profile?.department || ""
     });
     setIsEditing(false);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Published":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100";
-      case "Under Review":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100";
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -104,15 +166,15 @@ const Profile = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage src={mockUser.avatar} />
+                      <AvatarImage src="" />
                       <AvatarFallback className="text-lg bg-hue-gold text-hue-dark-navy">
-                        {mockUser.name.split(' ').map(n => n[0]).join('')}
+                        {(userInfo.name || user?.email || "U").split(' ').map(n => n[0]).join('').toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-2xl">{userInfo.name}</CardTitle>
+                      <CardTitle className="text-2xl">{userInfo.name || user?.email}</CardTitle>
                       <CardDescription className="text-lg">
-                        Student ID: {mockUser.studentId}
+                        {user?.email}
                       </CardDescription>
                     </div>
                   </div>
@@ -146,54 +208,38 @@ const Profile = () => {
                       value={userInfo.name}
                       onChange={(e) => setUserInfo(prev => ({ ...prev, name: e.target.value }))}
                       disabled={!isEditing}
+                      placeholder="Enter your full name"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
                     <Input
                       id="email"
-                      value={userInfo.email}
-                      onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
-                      disabled={!isEditing}
+                      value={user?.email || ""}
+                      disabled={true}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="major">Major</Label>
+                    <Label htmlFor="department">Department</Label>
                     <Input
-                      id="major"
-                      value={userInfo.major}
-                      onChange={(e) => setUserInfo(prev => ({ ...prev, major: e.target.value }))}
+                      id="department"
+                      value={userInfo.department}
+                      onChange={(e) => setUserInfo(prev => ({ ...prev, department: e.target.value }))}
                       disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="year">Academic Year</Label>
-                    <Input
-                      id="year"
-                      value={userInfo.year}
-                      onChange={(e) => setUserInfo(prev => ({ ...prev, year: e.target.value }))}
-                      disabled={!isEditing}
+                      placeholder="Enter your department"
                     />
                   </div>
                 </div>
 
                 {/* Statistics */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-border">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-border">
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-hue-navy">{mockUser.projects.length}</div>
+                    <div className="text-2xl font-bold text-hue-navy">{projects.length}</div>
                     <div className="text-sm text-muted-foreground">Total Projects</div>
                   </div>
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-hue-navy">
-                      {mockUser.projects.filter(p => p.status === "Published").length}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Published</div>
-                  </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-hue-navy">
-                      {mockUser.projects.reduce((sum, p) => sum + p.views, 0)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Total Views</div>
+                    <div className="text-2xl font-bold text-hue-navy">{projects.length}</div>
+                    <div className="text-sm text-muted-foreground">Published Projects</div>
                   </div>
                 </div>
               </CardContent>
@@ -202,71 +248,73 @@ const Profile = () => {
 
           {/* Projects Tab */}
           <TabsContent value="projects">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">My Projects</h2>
-                <Button variant="hero" asChild>
-                  <a href="/upload">Upload New Project</a>
-                </Button>
-              </div>
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold">My Projects</h2>
+                  <Button variant="hero" asChild>
+                    <Link to="/upload">Upload New Project</Link>
+                  </Button>
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mockUser.projects.map((project) => (
-                  <Card key={project.id} className="hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-                    <CardHeader>
-                      <div className="flex justify-between items-start mb-2">
-                        <Badge className={getStatusColor(project.status)}>
-                          {project.status}
-                        </Badge>
-                        {project.status === "Published" && (
-                          <div className="flex items-center text-muted-foreground text-sm">
-                            <Eye className="h-4 w-4 mr-1" />
-                            {project.views}
-                          </div>
-                        )}
-                      </div>
-                      <CardTitle className="text-lg line-clamp-2">{project.title}</CardTitle>
-                      <CardDescription className="line-clamp-2">
-                        {project.description}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          {new Date(project.date).toLocaleDateString()}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {projects.map((project) => (
+                    <Card key={project.id} className="hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
+                      <CardHeader>
+                        <div className="flex justify-between items-start mb-2">
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                            Published
+                          </Badge>
                         </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1">
-                            <Edit3 className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
-                          {project.status === "Published" && (
-                            <Button variant="navy" size="sm" className="flex-1">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View
+                        <CardTitle className="text-lg line-clamp-2">{project.title}</CardTitle>
+                        <CardDescription className="line-clamp-2">
+                          {project.description}
+                        </CardDescription>
+                      </CardHeader>
+                      {project.file_url && (
+                        <div className="px-6 pb-2">
+                          <img 
+                            src={project.file_url} 
+                            alt={project.title}
+                            className="w-full h-32 object-cover rounded-md"
+                          />
+                        </div>
+                      )}
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            {new Date(project.created_at).toLocaleDateString()}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Department: {project.department}
+                          </div>
+                          {project.video_url && (
+                            <Button variant="outline" size="sm" className="w-full" asChild>
+                              <a href={project.video_url} target="_blank" rel="noopener noreferrer">
+                                <Video className="h-4 w-4 mr-2" />
+                                Watch Demo
+                              </a>
                             </Button>
                           )}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {mockUser.projects.length === 0 && (
-                <div className="text-center py-12">
-                  <Book className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Start by uploading your first project to showcase your work.
-                  </p>
-                  <Button variant="hero" asChild>
-                    <a href="/upload">Upload Your First Project</a>
-                  </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              )}
-            </div>
+
+                {projects.length === 0 && (
+                  <div className="text-center py-12">
+                    <Book className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Start by uploading your first project to showcase your work.
+                    </p>
+                    <Button variant="hero" asChild>
+                      <Link to="/upload">Upload Your First Project</Link>
+                    </Button>
+                  </div>
+                )}
+              </div>
           </TabsContent>
         </Tabs>
       </div>
