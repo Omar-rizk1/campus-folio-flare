@@ -22,19 +22,10 @@ const StatsSection = () => {
           .from('projects')
           .select('*', { count: 'exact', head: true });
 
-        // Get total students (unique user_ids from projects)
-        const { data: studentData } = await supabase
-          .from('projects')
-          .select('user_id');
-
-        const uniqueStudents = new Set(studentData?.map(p => p.user_id) || []);
-
-        // Get unique departments
-        const { data: deptData } = await supabase
-          .from('projects')
-          .select('department');
-
-        const uniqueDepartments = new Set(deptData?.map(p => p.department) || []);
+        // Get total users from profiles table (actual students count)
+        const { count: usersCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
 
         // Get this month's projects
         const startOfMonth = new Date();
@@ -48,8 +39,8 @@ const StatsSection = () => {
 
         setStats({
           totalProjects: projectCount || 0,
-          totalStudents: uniqueStudents.size,
-          departments: uniqueDepartments.size,
+          totalStudents: usersCount || 0,
+          departments: 10, // Fixed at 10 academic majors
           thisMonth: thisMonthCount || 0
         });
       } catch (error) {
@@ -73,7 +64,7 @@ const StatsSection = () => {
             <div className="text-muted-foreground">Active Students</div>
           </div>
           <div>
-            <div className="text-4xl font-bold text-hue-navy mb-2">{stats.departments}</div>
+            <div className="text-4xl font-bold text-hue-navy mb-2">10</div>
             <div className="text-muted-foreground">Academic Majors</div>
           </div>
           <div>
@@ -106,7 +97,7 @@ const Index = () => {
                 Upload Your Project
               </Link>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 border-white text-white hover:bg-white hover:text-hue-navy" asChild>
+            <Button variant="outline" size="lg" className="text-lg px-8 border-white text-white hover:bg-white hover:text-primary bg-white/10 backdrop-blur-sm" asChild>
               <Link to="/projects">
                 <Search className="mr-2 h-5 w-5" />
                 Explore Projects

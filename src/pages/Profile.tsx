@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Edit3, Save, X, Eye, Download, Calendar, Book, Loader2, Video, Trash2 } from "lucide-react";
+import { User, Edit3, Save, X, Eye, Download, Calendar, Book, Loader2, Video, Trash2, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -322,14 +322,24 @@ const Profile = () => {
                           <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
                             Published
                           </Badge>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteProject(project.id)}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.location.href = `/edit-project/${project.id}`}
+                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteProject(project.id)}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                         <CardTitle className="text-lg line-clamp-2">{project.title}</CardTitle>
                         <CardDescription className="line-clamp-2">

@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Projects from "./pages/Projects";
 import Upload from "./pages/Upload";
 import Profile from "./pages/Profile";
+import EditProject from "./pages/EditProject";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,7 @@ const App = () => (
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/edit-project/:id" element={<EditProject />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/auth" element={<Auth />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
