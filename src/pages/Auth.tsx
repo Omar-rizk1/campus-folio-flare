@@ -10,14 +10,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 const majors = [
-  "Computer Science",
+  "Dentistry",
+  "Pharmacy", 
   "Engineering",
-  "Business Administration",
   "Medicine",
-  "Arts & Humanities",
-  "Sciences",
-  "Law",
-  "Architecture"
+  "Physical Therapy",
+  "Business Administration",
+  "Artificial Intelligence and Information",
+  "Applied Health Sciences Technology",
+  "Al_Alsun and Translation",
+  "Fine Arts and Design"
 ];
 
 const Auth = () => {
@@ -103,7 +105,7 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await signUp(signupData.email, signupData.password, signupData.name);
+      const { error } = await signUp(signupData.email, signupData.password, signupData.name, signupData.major, signupData.studentId);
       
       if (error) {
         toast({

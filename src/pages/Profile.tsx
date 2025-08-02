@@ -26,6 +26,8 @@ interface UserProfile {
   id: string;
   full_name: string | null;
   department: string | null;
+  major: string | null;
+  student_id: string | null;
   user_id: string;
 }
 
@@ -38,7 +40,9 @@ const Profile = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [userInfo, setUserInfo] = useState({
     name: "",
-    department: ""
+    department: "",
+    major: "",
+    studentId: ""
   });
 
   useEffect(() => {
@@ -66,7 +70,9 @@ const Profile = () => {
         setProfile(data);
         setUserInfo({
           name: data.full_name || "",
-          department: data.department || ""
+          department: data.department || "",
+          major: data.major || "",
+          studentId: data.student_id || ""
         });
       }
     } catch (error) {
@@ -103,7 +109,9 @@ const Profile = () => {
         .upsert({
           user_id: user.id,
           full_name: userInfo.name,
-          department: userInfo.department
+          department: userInfo.department,
+          major: userInfo.major,
+          student_id: userInfo.studentId
         }, {
           onConflict: 'user_id'
         });
@@ -155,7 +163,9 @@ const Profile = () => {
   const handleCancel = () => {
     setUserInfo({
       name: profile?.full_name || "",
-      department: profile?.department || ""
+      department: profile?.department || "",
+      major: profile?.major || "",
+      studentId: profile?.student_id || ""
     });
     setIsEditing(false);
   };
@@ -255,6 +265,26 @@ const Profile = () => {
                       onChange={(e) => setUserInfo(prev => ({ ...prev, department: e.target.value }))}
                       disabled={!isEditing}
                       placeholder="Enter your department"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="major">Major</Label>
+                    <Input
+                      id="major"
+                      value={userInfo.major}
+                      onChange={(e) => setUserInfo(prev => ({ ...prev, major: e.target.value }))}
+                      disabled={!isEditing}
+                      placeholder="Enter your major"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="student-id">Student ID</Label>
+                    <Input
+                      id="student-id"
+                      value={userInfo.studentId}
+                      onChange={(e) => setUserInfo(prev => ({ ...prev, studentId: e.target.value }))}
+                      disabled={!isEditing}
+                      placeholder="Enter your student ID"
                     />
                   </div>
                 </div>

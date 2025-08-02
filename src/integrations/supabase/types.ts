@@ -20,6 +20,8 @@ export type Database = {
           department: string | null
           full_name: string | null
           id: string
+          major: string | null
+          student_id: string | null
           updated_at: string
           user_id: string
         }
@@ -28,6 +30,8 @@ export type Database = {
           department?: string | null
           full_name?: string | null
           id?: string
+          major?: string | null
+          student_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -36,6 +40,8 @@ export type Database = {
           department?: string | null
           full_name?: string | null
           id?: string
+          major?: string | null
+          student_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -74,6 +80,42 @@ export type Database = {
           updated_at?: string
           user_id?: string
           video_url?: string | null
+        }
+        Relationships: []
+      }
+      todos: {
+        Row: {
+          completed: boolean
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
