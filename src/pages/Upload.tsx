@@ -11,14 +11,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const majors = [
-  "Computer Science",
+  "Dentistry",
+  "Pharmacy", 
   "Engineering",
-  "Business Administration",
   "Medicine",
-  "Arts & Humanities",
-  "Sciences",
-  "Law",
-  "Architecture"
+  "Physical Therapy",
+  "Business Administration",
+  "Artificial Intelligence and Information",
+  "Applied Health Sciences Technology",
+  "Al_Alsun and Translation",
+  "Fine Arts and Design"
 ];
 
 const Upload = () => {
