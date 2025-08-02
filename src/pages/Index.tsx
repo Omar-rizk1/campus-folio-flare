@@ -3,6 +3,88 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Upload, Search, Users, Award, BookOpen, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+const StatsSection = () => {
+  const [stats, setStats] = useState({
+    totalProjects: 0,
+    totalStudents: 0,
+    departments: 0,
+    thisMonth: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Get total projects
+        const { count: projectCount } = await supabase
+          .from('projects')
+          .select('*', { count: 'exact', head: true });
+
+        // Get total students (unique user_ids from projects)
+        const { data: studentData } = await supabase
+          .from('projects')
+          .select('user_id');
+
+        const uniqueStudents = new Set(studentData?.map(p => p.user_id) || []);
+
+        // Get unique departments
+        const { data: deptData } = await supabase
+          .from('projects')
+          .select('department');
+
+        const uniqueDepartments = new Set(deptData?.map(p => p.department) || []);
+
+        // Get this month's projects
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        
+        const { count: thisMonthCount } = await supabase
+          .from('projects')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', startOfMonth.toISOString());
+
+        setStats({
+          totalProjects: projectCount || 0,
+          totalStudents: uniqueStudents.size,
+          departments: uniqueDepartments.size,
+          thisMonth: thisMonthCount || 0
+        });
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  return (
+    <section className="bg-muted/50 py-16">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div>
+            <div className="text-4xl font-bold text-hue-navy mb-2">{stats.totalProjects}</div>
+            <div className="text-muted-foreground">Total Projects</div>
+          </div>
+          <div>
+            <div className="text-4xl font-bold text-hue-navy mb-2">{stats.totalStudents}</div>
+            <div className="text-muted-foreground">Active Students</div>
+          </div>
+          <div>
+            <div className="text-4xl font-bold text-hue-navy mb-2">{stats.departments}</div>
+            <div className="text-muted-foreground">Academic Majors</div>
+          </div>
+          <div>
+            <div className="text-4xl font-bold text-hue-navy mb-2">{stats.thisMonth}</div>
+            <div className="text-muted-foreground">This Month</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
 
 const Index = () => {
   return (
@@ -87,28 +169,7 @@ const Index = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-muted/50 py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold text-hue-navy mb-2">127</div>
-              <div className="text-muted-foreground">Total Projects</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-hue-navy mb-2">45</div>
-              <div className="text-muted-foreground">Active Students</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-hue-navy mb-2">8</div>
-              <div className="text-muted-foreground">Academic Majors</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-hue-navy mb-2">23</div>
-              <div className="text-muted-foreground">This Month</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <StatsSection />
 
       {/* CTA Section */}
       <section className="py-20">

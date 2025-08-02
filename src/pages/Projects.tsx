@@ -70,6 +70,10 @@ const Projects = () => {
   const handleDeleteProject = async (projectId: string) => {
     if (!user) return;
 
+    const confirmed = window.confirm("Are you sure you want to delete this project? This action cannot be undone.");
+    
+    if (!confirmed) return;
+
     try {
       const { error } = await supabase
         .from('projects')
@@ -107,7 +111,7 @@ const Projects = () => {
       <div className="container mx-auto py-8 px-4">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl font-bold text-primary mb-4">
             Student Projects
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
