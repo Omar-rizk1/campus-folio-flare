@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, Upload, Search, BarChart3, Moon, Sun, LogOut } from "lucide-react";
+import { Menu, X, User, Upload, Search, MessageSquare, Moon, Sun, LogOut } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -17,7 +17,7 @@ export const Navigation = () => {
     { name: "Projects", href: "/projects", icon: Search },
     { name: "Upload", href: "/upload", icon: Upload },
     { name: "Profile", href: "/profile", icon: User },
-    { name: "Dashboard", href: "/admin", icon: BarChart3 },
+    { name: "Contact", href: "/contact", icon: MessageSquare },
   ];
 
   const isActive = (href: string) => location.pathname === href;
