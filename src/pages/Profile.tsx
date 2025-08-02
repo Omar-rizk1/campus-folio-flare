@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Edit3, Save, X, Eye, Download, Calendar, Book, Loader2, Video } from "lucide-react";
+import { User, Edit3, Save, X, Eye, Download, Calendar, Book, Loader2, Video, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,6 +104,8 @@ const Profile = () => {
           user_id: user.id,
           full_name: userInfo.name,
           department: userInfo.department
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) throw error;
@@ -119,6 +121,32 @@ const Profile = () => {
       toast({
         title: "Update failed",
         description: "There was an error updating your profile. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Project deleted",
+        description: "Your project has been successfully deleted.",
+      });
+      
+      fetchProjects();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({
+        title: "Delete failed",
+        description: "There was an error deleting your project. Please try again.",
         variant: "destructive"
       });
     }
@@ -264,6 +292,14 @@ const Profile = () => {
                           <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
                             Published
                           </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteProject(project.id)}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                         <CardTitle className="text-lg line-clamp-2">{project.title}</CardTitle>
                         <CardDescription className="line-clamp-2">

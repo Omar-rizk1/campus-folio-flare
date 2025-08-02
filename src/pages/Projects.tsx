@@ -1,55 +1,105 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Eye, Download, Calendar } from "lucide-react";
+import { Search, Filter, Eye, Download, Calendar, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
-// Mock data for demonstration
-const mockProjects = [
-  {
-    id: 1,
-    title: "AI-Powered Healthcare System",
-    description: "A machine learning application for medical diagnosis assistance",
-    student: "Ahmed Hassan",
-    major: "Computer Science",
-    date: "2024-01-15",
-    views: 42,
-    pdf: "healthcare-ai.pdf"
-  },
-  {
-    id: 2,
-    title: "Sustainable Energy Management",
-    description: "IoT-based smart grid system for renewable energy optimization",
-    student: "Sara Mohamed",
-    major: "Engineering",
-    date: "2024-01-10",
-    views: 38,
-    pdf: "energy-management.pdf"
-  },
-  {
-    id: 3,
-    title: "Digital Marketing Analytics",
-    description: "Data-driven marketing campaign optimization platform",
-    student: "Omar Khaled",
-    major: "Business",
-    date: "2024-01-08",
-    views: 31,
-    pdf: "marketing-analytics.pdf"
-  }
-];
+interface Project {
+  id: string;
+  title: string;
+  description: string | null;
+  created_at: string;
+  file_url: string | null;
+  video_url: string | null;
+  department: string;
+  user_id: string;
+  profiles?: {
+    full_name: string | null;
+  } | null;
+}
 
-const majors = ["All Majors", "Computer Science", "Engineering", "Business", "Medicine", "Arts"];
+const departments = ["All Departments", "Computer Science", "Engineering", "Business", "Medicine", "Arts"];
 
 const Projects = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedMajor, setSelectedMajor] = useState("All Majors");
+  const [selectedDepartment, setSelectedDepartment] = useState("All Departments");
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredProjects = mockProjects.filter(project => {
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const { data: projectsData, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch profiles separately to get full names
+      const userIds = [...new Set(projectsData?.map(p => p.user_id) || [])];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
+
+      const profileMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+      
+      const projectsWithProfiles = projectsData?.map(project => ({
+        ...project,
+        profiles: profileMap.get(project.user_id) || null
+      })) || [];
+
+      setProjects(projectsWithProfiles);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Project deleted",
+        description: "Your project has been successfully deleted.",
+      });
+      
+      fetchProjects();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({
+        title: "Delete failed",
+        description: "There was an error deleting your project. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filteredProjects = projects.filter(project => {
     const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.student.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesMajor = selectedMajor === "All Majors" || project.major === selectedMajor;
-    return matchesSearch && matchesMajor;
+                         (project.profiles?.full_name || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDepartment = selectedDepartment === "All Departments" || project.department === selectedDepartment;
+    return matchesSearch && matchesDepartment;
   });
 
   return (
@@ -79,62 +129,93 @@ const Projects = () => {
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <select
-              value={selectedMajor}
-              onChange={(e) => setSelectedMajor(e.target.value)}
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
               className="px-3 py-2 border border-input rounded-md bg-background text-foreground"
             >
-              {majors.map((major) => (
-                <option key={major} value={major}>
-                  {major}
+              {departments.map((department) => (
+                <option key={department} value={department}>
+                  {department}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* Project Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <Card key={project.id} className="hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-              <CardHeader>
-                <div className="flex justify-between items-start mb-2">
-                  <Badge variant="secondary" className="bg-hue-gold text-hue-dark-navy">
-                    {project.major}
-                  </Badge>
-                  <div className="flex items-center text-muted-foreground text-sm">
-                    <Eye className="h-4 w-4 mr-1" />
-                    {project.views}
-                  </div>
-                </div>
-                <CardTitle className="text-xl line-clamp-2">{project.title}</CardTitle>
-                <CardDescription className="line-clamp-2">
-                  {project.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{project.student}</span>
-                    <div className="flex items-center text-muted-foreground">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {new Date(project.date).toLocaleDateString()}
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground text-lg">Loading projects...</p>
+          </div>
+        ) : (
+          <>
+            {/* Project Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProjects.map((project) => (
+                <Card key={project.id} className="hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
+                  <CardHeader>
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge variant="secondary" className="bg-hue-gold text-hue-dark-navy">
+                        {project.department}
+                      </Badge>
+                      {user && user.id === project.user_id && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteProject(project.id)}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Eye className="h-4 w-4 mr-2" />
-                      View
-                    </Button>
-                    <Button variant="navy" size="sm" className="flex-1">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    <CardTitle className="text-xl line-clamp-2">{project.title}</CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {project.description}
+                    </CardDescription>
+                  </CardHeader>
+                  {project.file_url && (
+                    <div className="px-6 pb-2">
+                      <img 
+                        src={project.file_url} 
+                        alt={project.title}
+                        className="w-full h-32 object-cover rounded-md"
+                      />
+                    </div>
+                  )}
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">{project.profiles?.full_name || "Unknown Student"}</span>
+                        <div className="flex items-center text-muted-foreground">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {new Date(project.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {project.file_url && (
+                          <Button variant="outline" size="sm" className="flex-1" asChild>
+                            <a href={project.file_url} target="_blank" rel="noopener noreferrer">
+                              <Eye className="h-4 w-4 mr-2" />
+                              View
+                            </a>
+                          </Button>
+                        )}
+                        {project.video_url && (
+                          <Button variant="navy" size="sm" className="flex-1" asChild>
+                            <a href={project.video_url} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4 mr-2" />
+                              Watch Demo
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
 
         {filteredProjects.length === 0 && (
           <div className="text-center py-12">

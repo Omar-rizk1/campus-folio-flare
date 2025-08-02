@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,100 +18,131 @@ import {
   TrendingUp
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock data for admin dashboard
-const mockStats = {
-  totalProjects: 127,
-  pendingReview: 8,
-  totalStudents: 45,
-  thisMonthUploads: 23
-};
-
-const mockPendingProjects = [
-  {
-    id: 1,
-    title: "Blockchain-based Voting System",
-    student: "Fatma Ali",
-    major: "Computer Science",
-    submittedDate: "2024-01-20",
-    description: "A secure electronic voting system using blockchain technology to ensure transparency and prevent fraud."
-  },
-  {
-    id: 2,
-    title: "Green Architecture Design",
-    student: "Youssef Ibrahim",
-    major: "Architecture",
-    submittedDate: "2024-01-19",
-    description: "Sustainable building design incorporating renewable energy sources and eco-friendly materials."
-  },
-  {
-    id: 3,
-    title: "Mobile Health Monitoring App",
-    student: "Nour Hassan",
-    major: "Medicine",
-    submittedDate: "2024-01-18",
-    description: "A mobile application for continuous health monitoring and early disease detection."
-  }
-];
-
-const mockRecentProjects = [
-  {
-    id: 4,
-    title: "AI-Powered Healthcare System",
-    student: "Ahmed Hassan",
-    major: "Computer Science",
-    status: "Approved",
-    reviewDate: "2024-01-15",
-    views: 42
-  },
-  {
-    id: 5,
-    title: "Sustainable Energy Management",
-    student: "Sara Mohamed",
-    major: "Engineering",
-    status: "Approved",
-    reviewDate: "2024-01-10",
-    views: 38
-  }
-];
+interface Project {
+  id: string;
+  title: string;
+  description: string | null;
+  created_at: string;
+  file_url: string | null;
+  video_url: string | null;
+  department: string;
+  user_id: string;
+  profiles?: {
+    full_name: string | null;
+  } | null;
+}
 
 const Admin = () => {
   const { toast } = useToast();
-  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const { user } = useAuth();
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [feedback, setFeedback] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [stats, setStats] = useState({
+    totalProjects: 0,
+    totalStudents: 0,
+    thisMonthUploads: 0
+  });
+  const [loading, setLoading] = useState(true);
 
-  const handleApprove = (projectId: number) => {
-    toast({
-      title: "Project Approved",
-      description: "The project has been approved and published.",
-    });
-    // In a real app, this would make an API call
-  };
+  // Check if user is admin
+  const isAdmin = user?.email === "Omar.mo.rizk@gmail.com";
 
-  const handleReject = (projectId: number) => {
-    if (!feedback.trim()) {
-      toast({
-        title: "Feedback Required",
-        description: "Please provide feedback for project rejection.",
-        variant: "destructive"
-      });
-      return;
+  useEffect(() => {
+    if (isAdmin) {
+      fetchProjects();
+      fetchStats();
     }
-    
-    toast({
-      title: "Project Rejected",
-      description: "The project has been rejected with feedback sent to the student.",
-    });
-    setSelectedProject(null);
-    setFeedback("");
+  }, [isAdmin]);
+
+  const fetchProjects = async () => {
+    try {
+      const { data: projectsData, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch profiles separately to get full names
+      const userIds = [...new Set(projectsData?.map(p => p.user_id) || [])];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
+
+      const profileMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+      
+      const projectsWithProfiles = projectsData?.map(project => ({
+        ...project,
+        profiles: profileMap.get(project.user_id) || null
+      })) || [];
+
+      setProjects(projectsWithProfiles);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredPendingProjects = mockPendingProjects.filter(project =>
+  const fetchStats = async () => {
+    try {
+      // Get total projects count
+      const { count: projectCount } = await supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true });
+
+      // Get unique students count
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id');
+
+      // Get this month's uploads
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const { count: thisMonthCount } = await supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', startOfMonth.toISOString());
+
+      setStats({
+        totalProjects: projectCount || 0,
+        totalStudents: profiles?.length || 0,
+        thisMonthUploads: thisMonthCount || 0
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const filteredProjects = projects.filter(project =>
     project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.student.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.major.toLowerCase().includes(searchTerm.toLowerCase())
+    (project.profiles?.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+            <p className="text-muted-foreground">
+              You don't have permission to access the admin dashboard.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,13 +158,13 @@ const Admin = () => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <Card className="shadow-elegant">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
-                  <p className="text-2xl font-bold text-hue-navy">{mockStats.totalProjects}</p>
+                  <p className="text-2xl font-bold text-hue-navy">{stats.totalProjects}</p>
                 </div>
                 <FileText className="h-8 w-8 text-hue-gold" />
               </div>
@@ -144,20 +175,8 @@ const Admin = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Pending Review</p>
-                  <p className="text-2xl font-bold text-orange-600">{mockStats.pendingReview}</p>
-                </div>
-                <Eye className="h-8 w-8 text-orange-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-elegant">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Students</p>
-                  <p className="text-2xl font-bold text-hue-navy">{mockStats.totalStudents}</p>
+                  <p className="text-2xl font-bold text-hue-navy">{stats.totalStudents}</p>
                 </div>
                 <Users className="h-8 w-8 text-hue-gold" />
               </div>
@@ -169,7 +188,7 @@ const Admin = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">This Month</p>
-                  <p className="text-2xl font-bold text-green-600">{mockStats.thisMonthUploads}</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.thisMonthUploads}</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-500" />
               </div>
@@ -177,168 +196,85 @@ const Admin = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="pending">Pending Review ({mockStats.pendingReview})</TabsTrigger>
-            <TabsTrigger value="recent">Recently Reviewed</TabsTrigger>
+        <Tabs defaultValue="projects" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="projects">All Projects ({stats.totalProjects})</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
-          {/* Pending Projects */}
-          <TabsContent value="pending" className="space-y-6">
+          {/* All Projects */}
+          <TabsContent value="projects" className="space-y-6">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search projects, students, or majors..."
+                placeholder="Search projects, students, or departments..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Projects List */}
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground text-lg">Loading projects...</p>
+              </div>
+            ) : (
               <div className="space-y-4">
-                {filteredPendingProjects.map((project) => (
-                  <Card 
-                    key={project.id} 
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-elegant ${
-                      selectedProject?.id === project.id ? 'ring-2 ring-hue-navy' : ''
-                    }`}
-                    onClick={() => setSelectedProject(project)}
-                  >
-                    <CardHeader>
+                {filteredProjects.map((project) => (
+                  <Card key={project.id} className="hover:shadow-elegant transition-all duration-200">
+                    <CardContent className="p-6">
                       <div className="flex justify-between items-start">
-                        <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-                          Pending Review
-                        </Badge>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {new Date(project.submittedDate).toLocaleDateString()}
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{project.title}</h3>
+                            <Badge className="bg-green-100 text-green-800">
+                              Published
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {project.description}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            <strong>Student:</strong> {project.profiles?.full_name || "Unknown"} | 
+                            <strong> Department:</strong> {project.department}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>Created: {new Date(project.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          {project.file_url && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={project.file_url} target="_blank" rel="noopener noreferrer">
+                                <Eye className="h-4 w-4 mr-2" />
+                                View
+                              </a>
+                            </Button>
+                          )}
+                          {project.video_url && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={project.video_url} target="_blank" rel="noopener noreferrer">
+                                Video
+                              </a>
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      <CardTitle className="text-lg">{project.title}</CardTitle>
-                      <CardDescription>
-                        <div className="space-y-1">
-                          <p><strong>Student:</strong> {project.student}</p>
-                          <p><strong>Major:</strong> {project.major}</p>
-                        </div>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {project.description}
-                      </p>
                     </CardContent>
                   </Card>
                 ))}
-              </div>
-
-              {/* Review Panel */}
-              <div className="lg:sticky lg:top-8">
-                {selectedProject ? (
-                  <Card className="shadow-elegant">
-                    <CardHeader>
-                      <CardTitle>Review Project</CardTitle>
-                      <CardDescription>{selectedProject.title}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <p><strong>Student:</strong> {selectedProject.student}</p>
-                        <p><strong>Major:</strong> {selectedProject.major}</p>
-                        <p><strong>Submitted:</strong> {new Date(selectedProject.submittedDate).toLocaleDateString()}</p>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <p className="font-medium">Description:</p>
-                        <p className="text-sm text-muted-foreground">
-                          {selectedProject.description}
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Feedback (optional for approval, required for rejection):</label>
-                        <Textarea
-                          value={feedback}
-                          onChange={(e) => setFeedback(e.target.value)}
-                          placeholder="Provide feedback to the student..."
-                          className="min-h-[100px]"
-                        />
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="destructive" 
-                          className="flex-1"
-                          onClick={() => handleReject(selectedProject.id)}
-                        >
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Reject
-                        </Button>
-                        <Button 
-                          variant="hero" 
-                          className="flex-1"
-                          onClick={() => handleApprove(selectedProject.id)}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Approve
-                        </Button>
-                      </div>
-
-                      <Button variant="outline" className="w-full">
-                        <FileText className="h-4 w-4 mr-2" />
-                        Download PDF
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card className="shadow-elegant">
-                    <CardContent className="p-8 text-center">
-                      <Eye className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">
-                        Select a project to review
-                      </p>
-                    </CardContent>
-                  </Card>
+                
+                {filteredProjects.length === 0 && (
+                  <div className="text-center py-12">
+                    <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground text-lg">
+                      No projects found matching your criteria.
+                    </p>
+                  </div>
                 )}
               </div>
-            </div>
-          </TabsContent>
-
-          {/* Recently Reviewed */}
-          <TabsContent value="recent" className="space-y-6">
-            <div className="space-y-4">
-              {mockRecentProjects.map((project) => (
-                <Card key={project.id} className="hover:shadow-elegant transition-all duration-200">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{project.title}</h3>
-                          <Badge className="bg-green-100 text-green-800">
-                            {project.status}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          <strong>Student:</strong> {project.student} | <strong>Major:</strong> {project.major}
-                        </p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>Reviewed: {new Date(project.reviewDate).toLocaleDateString()}</span>
-                          <span className="flex items-center">
-                            <Eye className="h-4 w-4 mr-1" />
-                            {project.views} views
-                          </span>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            )}
           </TabsContent>
 
           {/* Analytics */}
