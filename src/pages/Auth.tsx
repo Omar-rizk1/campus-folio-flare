@@ -43,6 +43,24 @@ const Auth = () => {
     confirmPassword: ""
   });
 
+  const [emailError, setEmailError] = useState("");
+
+  // Academic email validation function
+  const validateAcademicEmail = (email: string): boolean => {
+    const academicPattern = /^[a-zA-Z0-9]+@horus\.edu\.eg$/i;
+    return academicPattern.test(email);
+  };
+
+  const handleEmailChange = (email: string) => {
+    setSignupData(prev => ({ ...prev, email }));
+    
+    if (email && !validateAcademicEmail(email)) {
+      setEmailError("Please use your Horus University email (e.g., 8241106@horus.edu.eg)");
+    } else {
+      setEmailError("");
+    }
+  };
+
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
@@ -83,6 +101,16 @@ const Auth = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate academic email
+    if (!validateAcademicEmail(signupData.email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please use your Horus University email address (e.g., 8241106@horus.edu.eg)",
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (signupData.password !== signupData.confirmPassword) {
       toast({
@@ -178,7 +206,7 @@ const Auth = () => {
                       <Input
                         id="login-email"
                         type="email"
-                        placeholder="your.email@hue.edu.eg"
+                        placeholder="8241106@horus.edu.eg"
                         value={loginData.email}
                         onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
                         className="pl-10"
@@ -258,19 +286,25 @@ const Auth = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email Address</Label>
+                    <Label htmlFor="signup-email">Academic Email Address</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         id="signup-email"
                         type="email"
-                        placeholder="ahmed.hassan@hue.edu.eg"
+                        placeholder="8241106@horus.edu.eg"
                         value={signupData.email}
-                        onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))}
-                        className="pl-10"
+                        onChange={(e) => handleEmailChange(e.target.value)}
+                        className={`pl-10 ${emailError ? "border-destructive" : ""}`}
                         required
                       />
                     </div>
+                    {emailError && (
+                      <p className="text-sm text-destructive">{emailError}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Use your Horus University email address
+                    </p>
                   </div>
 
                   <div className="space-y-2">

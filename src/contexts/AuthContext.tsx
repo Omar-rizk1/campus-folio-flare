@@ -49,6 +49,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string, major?: string, studentId?: string) => {
+    // Server-side academic email validation
+    const academicPattern = /^[a-zA-Z0-9]+@horus\.edu\.eg$/i;
+    if (!academicPattern.test(email)) {
+      return { 
+        error: { 
+          message: "Only Horus University email addresses (@horus.edu.eg) are allowed for registration." 
+        } 
+      };
+    }
+
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
