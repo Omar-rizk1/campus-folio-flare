@@ -169,19 +169,19 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center p-2 sm:p-4">
+      <div className="w-full max-w-sm sm:max-w-md">
         {/* Logo and Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <img 
             src="/lovable-uploads/ac5e776a-651c-4985-aef8-abad0532206a.png" 
             alt="HUE Logo" 
-            className="h-16 w-auto mx-auto mb-4"
+            className="h-12 sm:h-16 w-auto mx-auto mb-3 sm:mb-4"
           />
-          <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
             HUE Projects
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-sm sm:text-base text-muted-foreground mt-2 px-2">
             Horus University Egypt - Student Portal
           </p>
         </div>
@@ -327,7 +327,7 @@ const Auth = () => {
                         id="signup-major"
                         value={signupData.major}
                         onChange={(e) => setSignupData(prev => ({ ...prev, major: e.target.value }))}
-                        className="w-full pl-10 pr-3 py-2 border border-input rounded-md bg-background text-foreground"
+                        className="w-full pl-10 pr-3 py-2 border border-input rounded-md bg-background text-foreground text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-ring z-50"
                         required
                       >
                         <option value="">Select your major</option>
@@ -395,7 +395,7 @@ const Auth = () => {
           </Tabs>
         </Card>
 
-        <p className="text-center text-sm text-muted-foreground mt-4">
+        <p className="text-center text-xs sm:text-sm text-muted-foreground mt-4 px-2">
           By signing up, you agree to HUE's Terms of Service and Privacy Policy
         </p>
       </div>

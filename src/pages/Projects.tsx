@@ -22,13 +22,25 @@ interface Project {
   } | null;
 }
 
-const departments = ["All Departments", "Computer Science", "Engineering", "Business", "Medicine", "Arts"];
+const majors = [
+  "All Majors", 
+  "Dentistry",
+  "Pharmacy", 
+  "Engineering",
+  "Medicine",
+  "Physical Therapy",
+  "Business Administration",
+  "Artificial Intelligence and Information",
+  "Applied Health Sciences Technology",
+  "Al_Alsun and Translation",
+  "Fine Arts and Design"
+];
 
 const Projects = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDepartment, setSelectedDepartment] = useState("All Departments");
+  const [selectedMajor, setSelectedMajor] = useState("All Majors");
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -102,44 +114,44 @@ const Projects = () => {
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (project.profiles?.full_name || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = selectedDepartment === "All Departments" || project.department === selectedDepartment;
-    return matchesSearch && matchesDepartment;
+    const matchesMajor = selectedMajor === "All Majors" || project.department === selectedMajor;
+    return matchesSearch && matchesMajor;
   });
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto py-6 px-4 sm:py-8 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-4">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary mb-2 sm:mb-4">
             Student Projects
           </h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-2">
             Explore innovative projects created by HUE students across different majors
           </p>
         </div>
 
         {/* Search and Filter */}
-        <div className="mb-8 space-y-4 md:space-y-0 md:flex md:items-center md:gap-4">
+        <div className="mb-6 sm:mb-8 space-y-4 lg:space-y-0 lg:flex lg:items-center lg:gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search projects or students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 text-sm sm:text-base"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 justify-center lg:justify-start">
+            <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <select
-              value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="px-3 py-2 border border-input rounded-md bg-background text-foreground"
+              value={selectedMajor}
+              onChange={(e) => setSelectedMajor(e.target.value)}
+              className="w-full max-w-xs px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              {departments.map((department) => (
-                <option key={department} value={department}>
-                  {department}
+              {majors.map((major) => (
+                <option key={major} value={major}>
+                  {major}
                 </option>
               ))}
             </select>
@@ -148,17 +160,17 @@ const Projects = () => {
 
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">Loading projects...</p>
+            <p className="text-muted-foreground text-base sm:text-lg">Loading projects...</p>
           </div>
         ) : (
           <>
             {/* Project Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {filteredProjects.map((project) => (
-                <Card key={project.id} className="hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-                  <CardHeader>
+                <Card key={project.id} className="hover:shadow-elegant transition-all duration-300 hover:-translate-y-1 flex flex-col h-full">
+                  <CardHeader className="pb-3">
                     <div className="flex justify-between items-start mb-2">
-                      <Badge variant="secondary" className="bg-hue-gold text-hue-dark-navy">
+                      <Badge variant="secondary" className="bg-hue-gold text-hue-dark-navy text-xs">
                         {project.department}
                       </Badge>
                       {user && user.id === project.user_id && (
@@ -166,49 +178,56 @@ const Projects = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteProject(project.id)}
-                          className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-800 hover:bg-red-50 h-8 w-8 p-0"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       )}
                     </div>
-                    <CardTitle className="text-xl line-clamp-2">{project.title}</CardTitle>
-                    <CardDescription className="line-clamp-2">
+                    <CardTitle className="text-base sm:text-lg line-clamp-2 leading-tight">{project.title}</CardTitle>
+                    <CardDescription className="line-clamp-2 text-xs sm:text-sm">
                       {project.description}
                     </CardDescription>
                   </CardHeader>
                   {project.file_url && (
-                    <div className="px-6 pb-2">
+                    <div className="px-4 sm:px-6 pb-2">
                       <img 
                         src={project.file_url} 
                         alt={project.title}
-                        className="w-full h-32 object-cover rounded-md"
+                        className="w-full h-24 sm:h-32 object-cover rounded-md"
                       />
                     </div>
                   )}
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{project.profiles?.full_name || "Unknown Student"}</span>
-                        <div className="flex items-center text-muted-foreground">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {new Date(project.created_at).toLocaleDateString()}
+                  <CardContent className="pt-3 mt-auto">
+                    <div className="space-y-3 sm:space-y-4">
+                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                        <span className="font-medium truncate pr-2">{project.profiles?.full_name || "Unknown Student"}</span>
+                        <div className="flex items-center text-muted-foreground flex-shrink-0">
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="hidden sm:inline">
+                            {new Date(project.created_at).toLocaleDateString()}
+                          </span>
+                          <span className="sm:hidden">
+                            {new Date(project.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+                          </span>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         {project.file_url && (
-                          <Button variant="outline" size="sm" className="flex-1" asChild>
+                          <Button variant="outline" size="sm" className="flex-1 text-xs sm:text-sm h-8 sm:h-9" asChild>
                             <a href={project.file_url} target="_blank" rel="noopener noreferrer">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View
+                              <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">View</span>
+                              <span className="sm:hidden">View</span>
                             </a>
                           </Button>
                         )}
                         {project.video_url && (
-                          <Button variant="navy" size="sm" className="flex-1" asChild>
+                          <Button variant="navy" size="sm" className="flex-1 text-xs sm:text-sm h-8 sm:h-9" asChild>
                             <a href={project.video_url} target="_blank" rel="noopener noreferrer">
-                              <Download className="h-4 w-4 mr-2" />
-                              Watch Demo
+                              <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">Demo</span>
+                              <span className="sm:hidden">Demo</span>
                             </a>
                           </Button>
                         )}
@@ -221,9 +240,9 @@ const Projects = () => {
           </>
         )}
 
-        {filteredProjects.length === 0 && (
+        {filteredProjects.length === 0 && !loading && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-base sm:text-lg">
               No projects found matching your criteria.
             </p>
           </div>
