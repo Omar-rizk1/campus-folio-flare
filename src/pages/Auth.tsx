@@ -158,7 +158,7 @@ const Auth = () => {
         {/* Logo and Header */}
         <div className="text-center mb-6 sm:mb-8">
           <img src="/lovable-uploads/ac5e776a-651c-4985-aef8-abad0532206a.png" alt="HUE Logo" className="h-12 sm:h-16 w-auto mx-auto mb-3 sm:mb-4" />
-          <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text sm:text-3xl text-amber-400">
+          <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text sm:text-3xl text-[#110843]">
             HUE Projects
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-2 px-2">
