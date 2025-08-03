@@ -55,7 +55,7 @@ const Auth = () => {
     setSignupData(prev => ({ ...prev, email }));
     
     if (email && !validateAcademicEmail(email)) {
-      setEmailError("Please use your Horus University email (e.g., 8241106@horus.edu.eg)");
+      setEmailError("Please use your Horus University email (e.g., 1234567@horus.edu.eg)");
     } else {
       setEmailError("");
     }
@@ -106,7 +106,7 @@ const Auth = () => {
     if (!validateAcademicEmail(signupData.email)) {
       toast({
         title: "Invalid Email",
-        description: "Please use your Horus University email address (e.g., 8241106@horus.edu.eg)",
+        description: "Please use your Horus University email address (e.g., 1234567@horus.edu.eg)",
         variant: "destructive"
       });
       return;
@@ -206,7 +206,7 @@ const Auth = () => {
                       <Input
                         id="login-email"
                         type="email"
-                        placeholder="8241106@horus.edu.eg"
+                        placeholder="1234567@horus.edu.eg"
                         value={loginData.email}
                         onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
                         className="pl-10"
@@ -292,7 +292,7 @@ const Auth = () => {
                       <Input
                         id="signup-email"
                         type="email"
-                        placeholder="8241106@horus.edu.eg"
+                        placeholder="1234567@horus.edu.eg"
                         value={signupData.email}
                         onChange={(e) => handleEmailChange(e.target.value)}
                         className={`pl-10 ${emailError ? "border-destructive" : ""}`}
