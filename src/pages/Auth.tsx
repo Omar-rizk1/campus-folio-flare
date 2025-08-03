@@ -8,32 +8,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, EyeOff, Mail, Lock, User, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-
-const majors = [
-  "Dentistry",
-  "Pharmacy", 
-  "Engineering",
-  "Medicine",
-  "Physical Therapy",
-  "Business Administration",
-  "Artificial Intelligence and Information",
-  "Applied Health Sciences Technology",
-  "Al_Alsun and Translation",
-  "Fine Arts and Design"
-];
-
+const majors = ["Dentistry", "Pharmacy", "Engineering", "Medicine", "Physical Therapy", "Business Administration", "Artificial Intelligence and Information", "Applied Health Sciences Technology", "Al_Alsun and Translation", "Fine Arts and Design"];
 const Auth = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
-  const { user, signIn, signUp } = useAuth();
+  const {
+    user,
+    signIn,
+    signUp
+  } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
   const [loginData, setLoginData] = useState({
     email: "",
     password: ""
   });
-
   const [signupData, setSignupData] = useState({
     name: "",
     email: "",
@@ -42,7 +33,6 @@ const Auth = () => {
     password: "",
     confirmPassword: ""
   });
-
   const [emailError, setEmailError] = useState("");
 
   // Academic email validation function
@@ -50,10 +40,11 @@ const Auth = () => {
     const academicPattern = /^[a-zA-Z0-9]+@horus\.edu\.eg$/i;
     return academicPattern.test(email);
   };
-
   const handleEmailChange = (email: string) => {
-    setSignupData(prev => ({ ...prev, email }));
-    
+    setSignupData(prev => ({
+      ...prev,
+      email
+    }));
     if (email && !validateAcademicEmail(email)) {
       setEmailError("Please use your Horus University email (e.g., 1234567@horus.edu.eg)");
     } else {
@@ -67,14 +58,13 @@ const Auth = () => {
       navigate("/");
     }
   }, [user, navigate]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
-      const { error } = await signIn(loginData.email, loginData.password);
-      
+      const {
+        error
+      } = await signIn(loginData.email, loginData.password);
       if (error) {
         toast({
           title: "Login failed",
@@ -84,7 +74,7 @@ const Auth = () => {
       } else {
         toast({
           title: "Login successful!",
-          description: "Welcome back to HUE Projects.",
+          description: "Welcome back to HUE Projects."
         });
         navigate("/");
       }
@@ -98,10 +88,9 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate academic email
     if (!validateAcademicEmail(signupData.email)) {
       toast({
@@ -111,7 +100,6 @@ const Auth = () => {
       });
       return;
     }
-    
     if (signupData.password !== signupData.confirmPassword) {
       toast({
         title: "Password mismatch",
@@ -120,7 +108,6 @@ const Auth = () => {
       });
       return;
     }
-
     if (signupData.password.length < 6) {
       toast({
         title: "Password too short",
@@ -129,12 +116,11 @@ const Auth = () => {
       });
       return;
     }
-
     setIsLoading(true);
-
     try {
-      const { error } = await signUp(signupData.email, signupData.password, signupData.name, signupData.major, signupData.studentId);
-      
+      const {
+        error
+      } = await signUp(signupData.email, signupData.password, signupData.name, signupData.major, signupData.studentId);
       if (error) {
         toast({
           title: "Registration failed",
@@ -144,9 +130,9 @@ const Auth = () => {
       } else {
         toast({
           title: "Account created successfully!",
-          description: "Please check your email to verify your account.",
+          description: "Please check your email to verify your account."
         });
-        
+
         // Reset form
         setSignupData({
           name: "",
@@ -167,18 +153,12 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
-
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-2 sm:p-4">
+  return <div className="min-h-screen bg-background flex items-center justify-center p-2 sm:p-4">
       <div className="w-full max-w-sm sm:max-w-md">
         {/* Logo and Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <img 
-            src="/lovable-uploads/ac5e776a-651c-4985-aef8-abad0532206a.png" 
-            alt="HUE Logo" 
-            className="h-12 sm:h-16 w-auto mx-auto mb-3 sm:mb-4"
-          />
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+          <img src="/lovable-uploads/ac5e776a-651c-4985-aef8-abad0532206a.png" alt="HUE Logo" className="h-12 sm:h-16 w-auto mx-auto mb-3 sm:mb-4" />
+          <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text sm:text-3xl text-amber-400">
             HUE Projects
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-2 px-2">
@@ -203,15 +183,10 @@ const Auth = () => {
                     <Label htmlFor="login-email">Email Address</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="1234567@horus.edu.eg"
-                        value={loginData.email}
-                        onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
-                        className="pl-10"
-                        required
-                      />
+                      <Input id="login-email" type="email" placeholder="1234567@horus.edu.eg" value={loginData.email} onChange={e => setLoginData(prev => ({
+                      ...prev,
+                      email: e.target.value
+                    }))} className="pl-10" required />
                     </div>
                   </div>
 
@@ -219,45 +194,28 @@ const Auth = () => {
                     <Label htmlFor="login-password">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        id="login-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={loginData.password}
-                        onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-                        className="pl-10 pr-10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
+                      <Input id="login-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={loginData.password} onChange={e => setLoginData(prev => ({
+                      ...prev,
+                      password: e.target.value
+                    }))} className="pl-10 pr-10" required />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground">
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                   </div>
 
                   <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
+                    {isLoading ? <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         Signing in...
-                      </>
-                    ) : (
-                      "Sign In"
-                    )}
+                      </> : "Sign In"}
                   </Button>
 
                   <div className="text-center">
-                    <button
-                      type="button"
-                      className="text-sm text-hue-navy hover:underline"
-                      onClick={() => toast({
-                        title: "Password Reset",
-                        description: "Password reset functionality will be implemented with Supabase authentication.",
-                      })}
-                    >
+                    <button type="button" className="text-sm text-hue-navy hover:underline" onClick={() => toast({
+                    title: "Password Reset",
+                    description: "Password reset functionality will be implemented with Supabase authentication."
+                  })}>
                       Forgot your password?
                     </button>
                   </div>
@@ -273,15 +231,10 @@ const Auth = () => {
                     <Label htmlFor="signup-name">Full Name</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        placeholder="Ahmed Hassan"
-                        value={signupData.name}
-                        onChange={(e) => setSignupData(prev => ({ ...prev, name: e.target.value }))}
-                        className="pl-10"
-                        required
-                      />
+                      <Input id="signup-name" type="text" placeholder="Ahmed Hassan" value={signupData.name} onChange={e => setSignupData(prev => ({
+                      ...prev,
+                      name: e.target.value
+                    }))} className="pl-10" required />
                     </div>
                   </div>
 
@@ -289,19 +242,9 @@ const Auth = () => {
                     <Label htmlFor="signup-email">Academic Email Address</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="1234567@horus.edu.eg"
-                        value={signupData.email}
-                        onChange={(e) => handleEmailChange(e.target.value)}
-                        className={`pl-10 ${emailError ? "border-destructive" : ""}`}
-                        required
-                      />
+                      <Input id="signup-email" type="email" placeholder="1234567@horus.edu.eg" value={signupData.email} onChange={e => handleEmailChange(e.target.value)} className={`pl-10 ${emailError ? "border-destructive" : ""}`} required />
                     </div>
-                    {emailError && (
-                      <p className="text-sm text-destructive">{emailError}</p>
-                    )}
+                    {emailError && <p className="text-sm text-destructive">{emailError}</p>}
                     <p className="text-xs text-muted-foreground">
                       Use your Horus University email address
                     </p>
@@ -309,33 +252,24 @@ const Auth = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="signup-student-id">Student ID</Label>
-                    <Input
-                      id="signup-student-id"
-                      type="text"
-                      placeholder="CS2021001"
-                      value={signupData.studentId}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, studentId: e.target.value }))}
-                      required
-                    />
+                    <Input id="signup-student-id" type="text" placeholder="CS2021001" value={signupData.studentId} onChange={e => setSignupData(prev => ({
+                    ...prev,
+                    studentId: e.target.value
+                  }))} required />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="signup-major">Major</Label>
                     <div className="relative">
                       <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <select
-                        id="signup-major"
-                        value={signupData.major}
-                        onChange={(e) => setSignupData(prev => ({ ...prev, major: e.target.value }))}
-                        className="w-full pl-10 pr-3 py-2 border border-input rounded-md bg-background text-foreground text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-ring z-50"
-                        required
-                      >
+                      <select id="signup-major" value={signupData.major} onChange={e => setSignupData(prev => ({
+                      ...prev,
+                      major: e.target.value
+                    }))} className="w-full pl-10 pr-3 py-2 border border-input rounded-md bg-background text-foreground text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-ring z-50" required>
                         <option value="">Select your major</option>
-                        {majors.map((major) => (
-                          <option key={major} value={major}>
+                        {majors.map(major => <option key={major} value={major}>
                             {major}
-                          </option>
-                        ))}
+                          </option>)}
                       </select>
                     </div>
                   </div>
@@ -344,20 +278,11 @@ const Auth = () => {
                     <Label htmlFor="signup-password">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        id="signup-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Create a password (min. 6 characters)"
-                        value={signupData.password}
-                        onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
-                        className="pl-10 pr-10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
+                      <Input id="signup-password" type={showPassword ? "text" : "password"} placeholder="Create a password (min. 6 characters)" value={signupData.password} onChange={e => setSignupData(prev => ({
+                      ...prev,
+                      password: e.target.value
+                    }))} className="pl-10 pr-10" required />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground">
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
@@ -367,27 +292,18 @@ const Auth = () => {
                     <Label htmlFor="signup-confirm-password">Confirm Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        id="signup-confirm-password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Confirm your password"
-                        value={signupData.confirmPassword}
-                        onChange={(e) => setSignupData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        className="pl-10"
-                        required
-                      />
+                      <Input id="signup-confirm-password" type={showPassword ? "text" : "password"} placeholder="Confirm your password" value={signupData.confirmPassword} onChange={e => setSignupData(prev => ({
+                      ...prev,
+                      confirmPassword: e.target.value
+                    }))} className="pl-10" required />
                     </div>
                   </div>
 
                   <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
+                    {isLoading ? <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         Creating account...
-                      </>
-                    ) : (
-                      "Create Account"
-                    )}
+                      </> : "Create Account"}
                   </Button>
                 </CardContent>
               </form>
@@ -399,8 +315,6 @@ const Auth = () => {
           By signing up, you agree to HUE's Terms of Service and Privacy Policy
         </p>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Auth;
