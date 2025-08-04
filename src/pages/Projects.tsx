@@ -213,21 +213,21 @@ const Projects = () => {
                     <CardTitle className="text-base sm:text-lg line-clamp-2 leading-tight">{project.title}</CardTitle>
                     <CardDescription className="text-xs sm:text-sm">
                       {expandedDescription === project.id ? (
-                        <div>
+                        <span>
                           {project.description}
                           {project.description && project.description.length > 100 && (
                             <Button
                               variant="link"
                               size="sm"
                               onClick={() => setExpandedDescription(null)}
-                              className="p-0 h-auto text-xs text-hue-navy"
+                              className="p-0 h-auto text-xs text-hue-navy ml-1"
                             >
                               Show less
                             </Button>
                           )}
-                        </div>
+                        </span>
                       ) : (
-                        <div>
+                        <span>
                           {truncateDescription(project.description)}
                           {project.description && project.description.length > 100 && (
                             <Button
@@ -239,7 +239,7 @@ const Projects = () => {
                               Show more
                             </Button>
                           )}
-                        </div>
+                        </span>
                       )}
                     </CardDescription>
                   </CardHeader>
