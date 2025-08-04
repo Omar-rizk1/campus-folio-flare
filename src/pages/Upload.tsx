@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload as UploadIcon, Image, Video, AlertCircle } from "lucide-react";
+import { Upload as UploadIcon, Image, Video, AlertCircle, Github } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,7 @@ const Upload = () => {
     description: "",
     major: "",
     videoLink: "",
+    githubLink: "",
     file: null as File | null
   });
 
@@ -122,7 +123,8 @@ const Upload = () => {
           description: formData.description,
           department: formData.major,
           file_url: publicUrl,
-          video_url: formData.videoLink || null
+          video_url: formData.videoLink || null,
+          github_url: formData.githubLink || null
         });
 
       if (dbError) {
@@ -140,6 +142,7 @@ const Upload = () => {
         description: "",
         major: "",
         videoLink: "",
+        githubLink: "",
         file: null
       });
       
@@ -274,6 +277,26 @@ const Upload = () => {
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       Optional: Add a link to a video demonstration of your project
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* GitHub Link (Optional) */}
+              <div className="space-y-2">
+                <Label htmlFor="githubLink">GitHub Repository Link (Optional)</Label>
+                <div className="flex items-start gap-2">
+                  <Github className="h-5 w-5 text-muted-foreground mt-3" />
+                  <div className="flex-1">
+                    <Input
+                      id="githubLink"
+                      name="githubLink"
+                      value={formData.githubLink}
+                      onChange={handleInputChange}
+                      placeholder="https://github.com/username/repository"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Optional: Add a link to your project's GitHub repository
                     </p>
                   </div>
                 </div>

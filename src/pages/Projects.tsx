@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Eye, Download, Calendar, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Search, Filter, Eye, Download, Calendar, Trash2, Github, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +17,7 @@ interface Project {
   created_at: string;
   file_url: string | null;
   video_url: string | null;
+  github_url?: string | null;
   department: string;
   user_id: string;
   profiles?: {
@@ -43,6 +46,7 @@ const Projects = () => {
   const [selectedMajor, setSelectedMajor] = useState("All Majors");
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedDescription, setExpandedDescription] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProjects();
@@ -82,10 +86,6 @@ const Projects = () => {
   const handleDeleteProject = async (projectId: string) => {
     if (!user) return;
 
-    const confirmed = window.confirm("Are you sure you want to delete this project? This action cannot be undone.");
-    
-    if (!confirmed) return;
-
     try {
       const { error } = await supabase
         .from('projects')
@@ -109,6 +109,12 @@ const Projects = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const truncateDescription = (text: string | null, maxLength: number = 100) => {
+    if (!text) return "";
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + "...";
   };
 
   const filteredProjects = projects.filter(project => {
@@ -174,28 +180,94 @@ const Projects = () => {
                         {project.department}
                       </Badge>
                       {user && user.id === project.user_id && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteProject(project.id)}
-                          className="text-red-600 hover:text-red-800 hover:bg-red-50 h-8 w-8 p-0"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50 h-8 w-8 p-0"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this project? This action cannot be undone and will permanently remove your project from the database.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteProject(project.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete Project
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                     <CardTitle className="text-base sm:text-lg line-clamp-2 leading-tight">{project.title}</CardTitle>
-                    <CardDescription className="line-clamp-2 text-xs sm:text-sm">
-                      {project.description}
+                    <CardDescription className="text-xs sm:text-sm">
+                      {expandedDescription === project.id ? (
+                        <div>
+                          {project.description}
+                          {project.description && project.description.length > 100 && (
+                            <Button
+                              variant="link"
+                              size="sm"
+                              onClick={() => setExpandedDescription(null)}
+                              className="p-0 h-auto text-xs text-hue-navy"
+                            >
+                              Show less
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          {truncateDescription(project.description)}
+                          {project.description && project.description.length > 100 && (
+                            <Button
+                              variant="link"
+                              size="sm"
+                              onClick={() => setExpandedDescription(project.id)}
+                              className="p-0 h-auto text-xs text-hue-navy ml-1"
+                            >
+                              Show more
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </CardDescription>
                   </CardHeader>
                   {project.file_url && (
                     <div className="px-4 sm:px-6 pb-2">
-                      <img 
-                        src={project.file_url} 
-                        alt={project.title}
-                        className="w-full h-24 sm:h-32 object-cover rounded-md"
-                      />
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <div className="cursor-pointer hover:opacity-90 transition-opacity">
+                            <img 
+                              src={project.file_url} 
+                              alt={project.title}
+                              className="w-full h-24 sm:h-32 object-cover rounded-md"
+                            />
+                          </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl w-full h-full max-h-[90vh] p-0">
+                          <DialogHeader className="p-6 pb-0">
+                            <DialogTitle>{project.title}</DialogTitle>
+                          </DialogHeader>
+                          <div className="flex-1 overflow-auto p-6 pt-0">
+                            <img 
+                              src={project.file_url} 
+                              alt={project.title}
+                              className="w-full h-auto max-h-[70vh] object-contain rounded-md"
+                            />
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   )}
                   <CardContent className="pt-3 mt-auto">
@@ -212,25 +284,27 @@ const Projects = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        {project.file_url && (
-                          <Button variant="outline" size="sm" className="flex-1 text-xs sm:text-sm h-8 sm:h-9" asChild>
-                            <a href={project.file_url} target="_blank" rel="noopener noreferrer">
-                              <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                              <span className="hidden sm:inline">View</span>
-                              <span className="sm:hidden">View</span>
-                            </a>
-                          </Button>
-                        )}
-                        {project.video_url && (
-                          <Button variant="navy" size="sm" className="flex-1 text-xs sm:text-sm h-8 sm:h-9" asChild>
-                            <a href={project.video_url} target="_blank" rel="noopener noreferrer">
-                              <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                              <span className="hidden sm:inline">Demo</span>
-                              <span className="sm:hidden">Demo</span>
-                            </a>
-                          </Button>
-                        )}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          {project.video_url && (
+                            <Button variant="navy" size="sm" className="flex-1 text-xs sm:text-sm h-8 sm:h-9" asChild>
+                              <a href={project.video_url} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">Demo</span>
+                                <span className="sm:hidden">Demo</span>
+                              </a>
+                            </Button>
+                          )}
+                          {project.github_url && (
+                            <Button variant="outline" size="sm" className="flex-1 text-xs sm:text-sm h-8 sm:h-9" asChild>
+                              <a href={project.github_url} target="_blank" rel="noopener noreferrer">
+                                <Github className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">GitHub</span>
+                                <span className="sm:hidden">GitHub</span>
+                              </a>
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
