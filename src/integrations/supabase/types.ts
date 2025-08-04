@@ -53,6 +53,7 @@ export type Database = {
           department: string
           description: string | null
           file_url: string | null
+          github_url: string | null
           id: string
           title: string
           updated_at: string
@@ -64,6 +65,7 @@ export type Database = {
           department: string
           description?: string | null
           file_url?: string | null
+          github_url?: string | null
           id?: string
           title: string
           updated_at?: string
@@ -75,47 +77,12 @@ export type Database = {
           department?: string
           description?: string | null
           file_url?: string | null
+          github_url?: string | null
           id?: string
           title?: string
           updated_at?: string
           user_id?: string
           video_url?: string | null
-        }
-        Relationships: []
-      }
-      todos: {
-        Row: {
-          completed: boolean
-          created_at: string
-          description: string | null
-          due_date: string | null
-          id: string
-          priority: string | null
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed?: boolean
-          created_at?: string
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          priority?: string | null
-          title: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          completed?: boolean
-          created_at?: string
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          priority?: string | null
-          title?: string
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }

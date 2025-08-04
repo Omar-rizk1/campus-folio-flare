@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload as UploadIcon, Image, Video, AlertCircle, Loader2 } from "lucide-react";
+import { Upload as UploadIcon, Image, Video, AlertCircle, Loader2, Github } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,7 @@ interface Project {
   department: string;
   file_url: string | null;
   video_url: string | null;
+  github_url: string | null;
   user_id: string;
 }
 
@@ -46,6 +47,7 @@ const EditProject = () => {
     description: "",
     major: "",
     videoLink: "",
+    githubLink: "",
     file: null as File | null
   });
 
@@ -85,6 +87,7 @@ const EditProject = () => {
         description: data.description || "",
         major: data.department,
         videoLink: data.video_url || "",
+        githubLink: data.github_url || "",
         file: null
       });
     } catch (error) {
@@ -184,7 +187,8 @@ const EditProject = () => {
           description: formData.description,
           department: formData.major,
           file_url: fileUrl,
-          video_url: formData.videoLink || null
+          video_url: formData.videoLink || null,
+          github_url: formData.githubLink || null
         })
         .eq('id', project.id)
         .eq('user_id', user.id);
@@ -359,6 +363,25 @@ const EditProject = () => {
                 </div>
               </div>
 
+              {/* GitHub Link (Optional) */}
+              <div className="space-y-2">
+                <Label htmlFor="githubLink">GitHub Repository Link (Optional)</Label>
+                <div className="flex items-start gap-2">
+                  <Github className="h-5 w-5 text-muted-foreground mt-3" />
+                  <div className="flex-1">
+                    <Input
+                      id="githubLink"
+                      name="githubLink"
+                      value={formData.githubLink}
+                      onChange={handleInputChange}
+                      placeholder="https://github.com/username/repository"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Optional: Add a link to your project's GitHub repository
+                    </p>
+                  </div>
+                </div>
+              </div>
               {/* Action Buttons */}
               <div className="flex gap-4">
                 <Button 
