@@ -53,6 +53,7 @@ export type Database = {
           department: string
           description: string | null
           file_url: string | null
+          files_urls: string[] | null
           github_url: string | null
           id: string
           title: string
@@ -65,6 +66,7 @@ export type Database = {
           department: string
           description?: string | null
           file_url?: string | null
+          files_urls?: string[] | null
           github_url?: string | null
           id?: string
           title: string
@@ -77,6 +79,7 @@ export type Database = {
           department?: string
           description?: string | null
           file_url?: string | null
+          files_urls?: string[] | null
           github_url?: string | null
           id?: string
           title?: string

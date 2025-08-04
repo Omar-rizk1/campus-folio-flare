@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload as UploadIcon, Image, Video, AlertCircle, Github } from "lucide-react";
+import { Upload as UploadIcon, Image, Video, AlertCircle, Github, FileText, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +34,7 @@ const Upload = () => {
     major: "",
     videoLink: "",
     githubLink: "",
-    file: null as File | null
+    files: [] as File[]
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -46,39 +46,62 @@ const Upload = () => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    const validFiles: File[] = [];
+    const allowedTypes = [
+      "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp",
+      "application/pdf", "text/plain", "application/msword", 
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ];
+
+    for (const file of selectedFiles) {
       if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Invalid file type",
-          description: "Please upload an image file (JPEG, PNG, GIF, or WebP).",
+          description: `File "${file.name}" is not supported. Please upload images, PDFs, or Office documents.`,
           variant: "destructive"
         });
-        return;
+        continue;
       }
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
         toast({
           title: "File too large",
-          description: "Please upload a file smaller than 10MB.",
+          description: `File "${file.name}" is too large. Please upload files smaller than 50MB.`,
           variant: "destructive"
         });
-        return;
+        continue;
       }
+      validFiles.push(file);
+    }
+
+    if (validFiles.length > 0) {
       setFormData(prev => ({
         ...prev,
-        file
+        files: [...prev.files, ...validFiles]
       }));
     }
+  };
+
+  const removeFile = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      files: prev.files.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.description || !formData.major || !formData.file) {
+    if (!formData.title || !formData.description || !formData.major || formData.files.length === 0) {
       toast({
         title: "Missing required fields",
-        description: "Please fill in all required fields and upload an image file.",
+        description: "Please fill in all required fields and upload at least one file.",
         variant: "destructive"
       });
       return;
@@ -96,23 +119,36 @@ const Upload = () => {
     setIsUploading(true);
 
     try {
-      // Upload image to Supabase storage
-      const fileExt = formData.file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      // Upload all files to Supabase storage
+      const uploadedFiles: string[] = [];
+      let primaryFileUrl = "";
 
-      const { error: uploadError } = await supabase.storage
-        .from('project-images')
-        .upload(filePath, formData.file);
+      for (let i = 0; i < formData.files.length; i++) {
+        const file = formData.files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${i}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
 
-      if (uploadError) {
-        throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from('project-files')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        // Get public URL for the uploaded file
+        const { data: { publicUrl } } = supabase.storage
+          .from('project-files')
+          .getPublicUrl(filePath);
+
+        uploadedFiles.push(publicUrl);
+        
+        // Set first uploaded file as primary file for backward compatibility
+        if (i === 0) {
+          primaryFileUrl = publicUrl;
+        }
       }
-
-      // Get public URL for the uploaded image
-      const { data: { publicUrl } } = supabase.storage
-        .from('project-images')
-        .getPublicUrl(filePath);
 
       // Save project to database
       const { error: dbError } = await supabase
@@ -122,7 +158,8 @@ const Upload = () => {
           title: formData.title,
           description: formData.description,
           department: formData.major,
-          file_url: publicUrl,
+          file_url: primaryFileUrl, // Backward compatibility
+          files_urls: uploadedFiles, // New multiple files support
           video_url: formData.videoLink || null,
           github_url: formData.githubLink || null
         });
@@ -143,7 +180,7 @@ const Upload = () => {
         major: "",
         videoLink: "",
         githubLink: "",
-        file: null
+        files: []
       });
       
       // Reset file input
@@ -239,25 +276,44 @@ const Upload = () => {
 
               {/* File Upload */}
               <div className="space-y-2">
-                <Label htmlFor="file-upload">Project Image *</Label>
+                <Label htmlFor="file-upload">Project Files *</Label>
                 <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
-                  <Image className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">
-                      Upload an image of your project (JPEG, PNG, GIF, or WebP - max 10MB)
+                      Upload project files (Images, PDFs, Documents - max 50MB each)
                     </p>
                     <Input
                       id="file-upload"
                       type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
                       onChange={handleFileChange}
                       className="max-w-xs mx-auto"
                     />
                   </div>
-                  {formData.file && (
-                    <p className="text-sm text-hue-navy mt-2 font-medium">
-                      Selected: {formData.file.name}
-                    </p>
+                  {formData.files.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <p className="text-sm text-hue-navy font-medium">
+                        Selected files: {formData.files.length}
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {formData.files.map((file, index) => (
+                          <div key={index} className="bg-background border rounded-md px-2 py-1 text-xs flex items-center gap-1">
+                            <span className="truncate max-w-[120px]">{file.name}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFile(index)}
+                              className="h-4 w-4 p-0 hover:bg-red-100"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -309,9 +365,10 @@ const Upload = () => {
                   <div className="text-sm">
                     <p className="font-medium mb-1">Before submitting:</p>
                     <ul className="text-muted-foreground space-y-1">
-                      <li>• Ensure your image clearly shows your project</li>
-                      <li>• Use high-quality images for better visibility</li>
+                      <li>• Upload multiple files (images, PDFs, documents)</li>
+                      <li>• Use high-quality files for better visibility</li>
                       <li>• Projects are immediately visible after upload</li>
+                      <li>• Maximum file size: 50MB per file</li>
                     </ul>
                   </div>
                 </div>

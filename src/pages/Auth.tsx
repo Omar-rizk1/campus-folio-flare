@@ -21,6 +21,7 @@ const Auth = () => {
   } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
   const [loginData, setLoginData] = useState({
     email: "",
     password: ""
@@ -33,6 +34,7 @@ const Auth = () => {
     password: "",
     confirmPassword: ""
   });
+  const [resetEmail, setResetEmail] = useState("");
   const [emailError, setEmailError] = useState("");
 
   // Academic email validation function
@@ -153,6 +155,60 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!validateAcademicEmail(resetEmail)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please use your Horus University email address.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const redirectUrl = `${window.location.origin}/auth`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: redirectUrl
+      });
+
+      if (error) {
+        toast({
+          title: "Reset failed",
+          description: error.message || "Failed to send reset email. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Reset email sent",
+          description: "Please check your email for the password reset link."
+        });
+        setResetEmail("");
+        setActiveTab("login");
+      }
+    } catch (error) {
+      toast({
+        title: "Reset failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return <div className="min-h-screen bg-background flex items-center justify-center p-2 sm:p-4">
       <div className="w-full max-w-sm sm:max-w-md">
         {/* Logo and Header */}
@@ -167,11 +223,12 @@ const Auth = () => {
         </div>
 
         <Card className="shadow-elegant">
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <CardHeader>
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="reset">Reset</TabsTrigger>
               </TabsList>
             </CardHeader>
 
@@ -212,10 +269,11 @@ const Auth = () => {
                   </Button>
 
                   <div className="text-center">
-                    <button type="button" className="text-sm text-hue-navy hover:underline" onClick={() => toast({
-                    title: "Password Reset",
-                    description: "Password reset functionality will be implemented with Supabase authentication."
-                  })}>
+                    <button 
+                      type="button" 
+                      className="text-sm text-hue-navy hover:underline" 
+                      onClick={() => setActiveTab("reset")}
+                    >
                       Forgot your password?
                     </button>
                   </div>
@@ -305,6 +363,57 @@ const Auth = () => {
                         Creating account...
                       </> : "Create Account"}
                   </Button>
+                </CardContent>
+              </form>
+            </TabsContent>
+
+            {/* Password Reset Tab */}
+            <TabsContent value="reset">
+              <form onSubmit={handleForgotPassword}>
+                <CardContent className="space-y-4">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold text-foreground">Reset Your Password</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Enter your email to receive a password reset link
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email Address</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input 
+                        id="reset-email" 
+                        type="email" 
+                        placeholder="1234567@horus.edu.eg" 
+                        value={resetEmail} 
+                        onChange={(e) => setResetEmail(e.target.value)} 
+                        className="pl-10" 
+                        required 
+                      />
+                    </div>
+                  </div>
+
+                  <Button type="submit" className="w-full" variant="hero" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Sending reset link...
+                      </>
+                    ) : (
+                      "Send Reset Link"
+                    )}
+                  </Button>
+
+                  <div className="text-center">
+                    <button 
+                      type="button" 
+                      className="text-sm text-hue-navy hover:underline" 
+                      onClick={() => setActiveTab("login")}
+                    >
+                      Back to Login
+                    </button>
+                  </div>
                 </CardContent>
               </form>
             </TabsContent>
