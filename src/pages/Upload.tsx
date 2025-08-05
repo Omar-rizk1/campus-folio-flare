@@ -274,12 +274,12 @@ const Upload = () => {
                   className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                   required
                 >
-                  <option value={0}>Level 0 - Beginner</option>
-                  <option value={1}>Level 1 - Basic</option>
-                  <option value={2}>Level 2 - Intermediate</option>
-                  <option value={3}>Level 3 - Advanced</option>
-                  <option value={4}>Level 4 - Expert</option>
-                  <option value={5}>Level 5 - Master</option>
+                  <option value={0}>Level 0</option>
+                  <option value={1}>Level 1</option>
+                  <option value={2}>Level 2</option>
+                  <option value={3}>Level 3</option>
+                  <option value={4}>Level 4</option>
+                  <option value={5}>Level 5</option>
                 </select>
               </div>
 
