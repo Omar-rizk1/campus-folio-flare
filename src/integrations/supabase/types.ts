@@ -56,6 +56,7 @@ export type Database = {
           files_urls: string[] | null
           github_url: string | null
           id: string
+          level: number | null
           title: string
           updated_at: string
           user_id: string
@@ -69,6 +70,7 @@ export type Database = {
           files_urls?: string[] | null
           github_url?: string | null
           id?: string
+          level?: number | null
           title: string
           updated_at?: string
           user_id: string
@@ -82,6 +84,7 @@ export type Database = {
           files_urls?: string[] | null
           github_url?: string | null
           id?: string
+          level?: number | null
           title?: string
           updated_at?: string
           user_id?: string

@@ -32,6 +32,7 @@ const Upload = () => {
     title: "",
     description: "",
     major: "",
+    level: 0,
     videoLink: "",
     githubLink: "",
     files: [] as File[]
@@ -158,6 +159,7 @@ const Upload = () => {
           title: formData.title,
           description: formData.description,
           department: formData.major,
+          level: formData.level,
           file_url: primaryFileUrl, // Backward compatibility
           files_urls: uploadedFiles, // New multiple files support
           video_url: formData.videoLink || null,
@@ -178,6 +180,7 @@ const Upload = () => {
         title: "",
         description: "",
         major: "",
+        level: 0,
         videoLink: "",
         githubLink: "",
         files: []
@@ -257,6 +260,26 @@ const Upload = () => {
                       {major}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              {/* Level */}
+              <div className="space-y-2">
+                <Label htmlFor="level">Project Level *</Label>
+                <select
+                  id="level"
+                  name="level"
+                  value={formData.level}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                  required
+                >
+                  <option value={0}>Level 0 - Beginner</option>
+                  <option value={1}>Level 1 - Basic</option>
+                  <option value={2}>Level 2 - Intermediate</option>
+                  <option value={3}>Level 3 - Advanced</option>
+                  <option value={4}>Level 4 - Expert</option>
+                  <option value={5}>Level 5 - Master</option>
                 </select>
               </div>
 

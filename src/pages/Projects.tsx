@@ -20,6 +20,7 @@ interface Project {
   github_url?: string | null;
   department: string;
   user_id: string;
+  level?: number;
   profiles?: {
     full_name: string | null;
   } | null;
@@ -44,6 +45,7 @@ const Projects = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMajor, setSelectedMajor] = useState("All Majors");
+  const [selectedLevel, setSelectedLevel] = useState("All Levels");
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedDescription, setExpandedDescription] = useState<string | null>(null);
@@ -121,7 +123,8 @@ const Projects = () => {
     const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (project.profiles?.full_name || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesMajor = selectedMajor === "All Majors" || project.department === selectedMajor;
-    return matchesSearch && matchesMajor;
+    const matchesLevel = selectedLevel === "All Levels" || project.level?.toString() === selectedLevel;
+    return matchesSearch && matchesMajor && matchesLevel;
   });
 
   return (
@@ -161,6 +164,19 @@ const Projects = () => {
                 </option>
               ))}
             </select>
+            <select
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(e.target.value)}
+              className="w-full max-w-xs px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="All Levels">All Levels</option>
+              <option value="0">Level 0</option>
+              <option value="1">Level 1</option>
+              <option value="2">Level 2</option>
+              <option value="3">Level 3</option>
+              <option value="4">Level 4</option>
+              <option value="5">Level 5</option>
+            </select>
           </div>
         </div>
 
@@ -176,9 +192,16 @@ const Projects = () => {
                 <Card key={project.id} className="hover:shadow-elegant transition-all duration-300 hover:-translate-y-1 flex flex-col h-full">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start mb-2">
-                      <Badge variant="secondary" className="bg-hue-gold text-hue-dark-navy text-xs">
-                        {project.department}
-                      </Badge>
+                      <div className="flex gap-1 flex-wrap">
+                        <Badge variant="secondary" className="bg-hue-gold text-hue-dark-navy text-xs">
+                          {project.department}
+                        </Badge>
+                        {project.level !== undefined && (
+                          <Badge variant="outline" className="text-xs">
+                            Level {project.level}
+                          </Badge>
+                        )}
+                      </div>
                       {user && user.id === project.user_id && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
