@@ -15,10 +15,13 @@ import {
   MessageSquare,
   Search,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Star,
+  Heart
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { ProjectStats } from "@/components/ProjectStats";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Project {
@@ -31,6 +34,9 @@ interface Project {
   department: string;
   user_id: string;
   creator_name?: string | null;
+  averageRating?: number;
+  totalLikes?: number;
+  totalReviews?: number;
 }
 
 const Admin = () => {
@@ -43,7 +49,11 @@ const Admin = () => {
   const [stats, setStats] = useState({
     totalProjects: 0,
     totalStudents: 0,
-    thisMonthUploads: 0
+    thisMonthUploads: 0,
+    totalRatings: 0,
+    totalLikes: 0,
+    totalReviews: 0,
+    averageRating: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -65,8 +75,31 @@ const Admin = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
+      // Fetch rating and engagement stats for each project
+      const projectsWithStats = await Promise.all(
+        (projectsData || []).map(async (project) => {
+          const [ratingsData, likesData, reviewsData] = await Promise.all([
+            supabase.from('project_ratings').select('rating').eq('project_id', project.id),
+            supabase.from('project_likes').select('id').eq('project_id', project.id),
+            supabase.from('project_reviews').select('id').eq('project_id', project.id)
+          ]);
+
+          const totalRatings = ratingsData.data?.length || 0;
+          const averageRating = totalRatings > 0 
+            ? ratingsData.data!.reduce((sum, r) => sum + r.rating, 0) / totalRatings 
+            : 0;
+
+          return {
+            ...project,
+            averageRating,
+            totalLikes: likesData.data?.length || 0,
+            totalReviews: reviewsData.data?.length || 0
+          };
+        })
+      );
       
-      setProjects(projectsData || []);
+      setProjects(projectsWithStats);
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
@@ -96,10 +129,26 @@ const Admin = () => {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfMonth.toISOString());
 
+      // Get engagement stats
+      const [ratingsData, likesData, reviewsData] = await Promise.all([
+        supabase.from('project_ratings').select('rating'),
+        supabase.from('project_likes').select('id'),
+        supabase.from('project_reviews').select('id')
+      ]);
+
+      const totalRatings = ratingsData.data?.length || 0;
+      const averageRating = totalRatings > 0 
+        ? ratingsData.data!.reduce((sum, r) => sum + r.rating, 0) / totalRatings 
+        : 0;
+
       setStats({
         totalProjects: projectCount || 0,
         totalStudents: new Set(uniqueUsers?.map(u => u.user_id) || []).size,
-        thisMonthUploads: thisMonthCount || 0
+        thisMonthUploads: thisMonthCount || 0,
+        totalRatings,
+        totalLikes: likesData.data?.length || 0,
+        totalReviews: reviewsData.data?.length || 0,
+        averageRating
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -142,7 +191,7 @@ const Admin = () => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="shadow-elegant">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -178,11 +227,24 @@ const Admin = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="shadow-elegant">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Avg Rating</p>
+                  <p className="text-2xl font-bold text-yellow-600">{stats.averageRating.toFixed(1)}</p>
+                </div>
+                <Star className="h-8 w-8 text-yellow-500" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="projects" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="projects">All Projects ({stats.totalProjects})</TabsTrigger>
+            <TabsTrigger value="engagement">Engagement Stats</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
@@ -215,6 +277,12 @@ const Admin = () => {
                             <Badge className="bg-green-100 text-green-800">
                               Published
                             </Badge>
+                            {project.averageRating && project.averageRating > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                                <span className="text-xs">{project.averageRating.toFixed(1)}</span>
+                              </div>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2">
                             {project.description}
@@ -225,6 +293,18 @@ const Admin = () => {
                           </p>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span>Created: {new Date(project.created_at).toLocaleDateString()}</span>
+                            {(project.totalLikes || 0) > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Heart className="h-3 w-3 text-red-500" />
+                                <span>{project.totalLikes} likes</span>
+                              </div>
+                            )}
+                            {(project.totalReviews || 0) > 0 && (
+                              <div className="flex items-center gap-1">
+                                <MessageSquare className="h-3 w-3 text-blue-500" />
+                                <span>{project.totalReviews} reviews</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-2 ml-4">
@@ -259,6 +339,23 @@ const Admin = () => {
                 )}
               </div>
             )}
+          </TabsContent>
+
+          {/* Engagement Stats */}
+          <TabsContent value="engagement" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Overall Engagement Stats */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Overall Engagement</h3>
+                <ProjectStats />
+              </div>
+              
+              {/* Top Projects */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Most Engaging Projects</h3>
+                <ProjectStats showTopProjects />
+              </div>
+            </div>
           </TabsContent>
 
           {/* Analytics */}
