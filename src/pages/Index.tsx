@@ -22,10 +22,10 @@ const StatsSection = () => {
           .from('projects')
           .select('*', { count: 'exact', head: true });
 
-        // Get total users from profiles table (actual students count)
-        const { count: usersCount } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true });
+        // Get total users from projects (unique users who have uploaded projects)
+        const { data: uniqueUsers } = await supabase
+          .from('projects')
+          .select('user_id');
 
         // Get this month's projects
         const startOfMonth = new Date();
@@ -39,7 +39,7 @@ const StatsSection = () => {
 
         setStats({
           totalProjects: projectCount || 0,
-          totalStudents: usersCount || 0,
+          totalStudents: new Set(uniqueUsers?.map(u => u.user_id) || []).size,
           departments: 10, // Fixed at 10 academic majors
           thisMonth: thisMonthCount || 0
         });

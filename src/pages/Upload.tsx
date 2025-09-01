@@ -139,7 +139,8 @@ const Upload = () => {
         files_urls: uploadedFiles,
         // New multiple files support
         video_url: formData.videoLink || null,
-        github_url: formData.githubLink || null
+        github_url: formData.githubLink || null,
+        creator_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown'
       });
       if (dbError) {
         throw dbError;

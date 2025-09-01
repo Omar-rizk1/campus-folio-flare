@@ -30,9 +30,7 @@ interface Project {
   video_url: string | null;
   department: string;
   user_id: string;
-  profiles?: {
-    full_name: string | null;
-  } | null;
+  creator_name?: string | null;
 }
 
 const Admin = () => {
@@ -67,22 +65,8 @@ const Admin = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
-      // Fetch profiles separately to get full names
-      const userIds = [...new Set(projectsData?.map(p => p.user_id) || [])];
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .in('user_id', userIds);
-
-      const profileMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
       
-      const projectsWithProfiles = projectsData?.map(project => ({
-        ...project,
-        profiles: profileMap.get(project.user_id) || null
-      })) || [];
-
-      setProjects(projectsWithProfiles);
+      setProjects(projectsData || []);
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
@@ -97,9 +81,9 @@ const Admin = () => {
         .from('projects')
         .select('*', { count: 'exact', head: true });
 
-      // Get unique students count
-      const { data: profiles } = await supabase
-        .from('profiles')
+      // Get unique students count from projects (since we can't access profiles directly)
+      const { data: uniqueUsers } = await supabase
+        .from('projects')
         .select('user_id');
 
       // Get this month's uploads
@@ -114,7 +98,7 @@ const Admin = () => {
 
       setStats({
         totalProjects: projectCount || 0,
-        totalStudents: profiles?.length || 0,
+        totalStudents: new Set(uniqueUsers?.map(u => u.user_id) || []).size,
         thisMonthUploads: thisMonthCount || 0
       });
     } catch (error) {
@@ -124,7 +108,7 @@ const Admin = () => {
 
   const filteredProjects = projects.filter(project =>
     project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (project.profiles?.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (project.creator_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     project.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -236,7 +220,7 @@ const Admin = () => {
                             {project.description}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            <strong>Student:</strong> {project.profiles?.full_name || "Unknown"} | 
+                            <strong>Student:</strong> {project.creator_name || "Unknown"} | 
                             <strong> Department:</strong> {project.department}
                           </p>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">

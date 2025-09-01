@@ -21,9 +21,7 @@ interface Project {
   department: string;
   user_id: string;
   level?: number;
-  profiles?: {
-    full_name: string | null;
-  } | null;
+  creator_name?: string | null;
 }
 
 const majors = [
@@ -62,22 +60,8 @@ const Projects = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
-      // Fetch profiles separately to get full names
-      const userIds = [...new Set(projectsData?.map(p => p.user_id) || [])];
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .in('user_id', userIds);
-
-      const profileMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
       
-      const projectsWithProfiles = projectsData?.map(project => ({
-        ...project,
-        profiles: profileMap.get(project.user_id) || null
-      })) || [];
-
-      setProjects(projectsWithProfiles);
+      setProjects(projectsData || []);
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
@@ -121,7 +105,7 @@ const Projects = () => {
 
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (project.profiles?.full_name || "").toLowerCase().includes(searchTerm.toLowerCase());
+                         (project.creator_name || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesMajor = selectedMajor === "All Majors" || project.department === selectedMajor;
     const matchesLevel = selectedLevel === "All Levels" || project.level?.toString() === selectedLevel;
     return matchesSearch && matchesMajor && matchesLevel;
@@ -296,7 +280,7 @@ const Projects = () => {
                   <CardContent className="pt-3 mt-auto">
                     <div className="space-y-3 sm:space-y-4">
                       <div className="flex items-center justify-between text-xs sm:text-sm">
-                        <span className="font-medium truncate pr-2">{project.profiles?.full_name || "Unknown Student"}</span>
+                        <span className="font-medium truncate pr-2">{project.creator_name || "Unknown Student"}</span>
                         <div className="flex items-center text-muted-foreground flex-shrink-0">
                           <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           <span className="hidden sm:inline">
