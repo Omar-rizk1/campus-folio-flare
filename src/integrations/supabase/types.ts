@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      collaboration_invites: {
+        Row: {
+          created_at: string
+          id: string
+          invitee_email: string
+          inviter_id: string
+          project_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invitee_email: string
+          inviter_id: string
+          project_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invitee_email?: string
+          inviter_id?: string
+          project_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collaboration_invites_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -46,6 +84,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      project_collaborators: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_collaborators_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_likes: {
         Row: {
@@ -199,7 +269,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_collaboration_invite: {
+        Args: { invite_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

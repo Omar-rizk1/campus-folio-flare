@@ -1,63 +1,25 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Edit3, Save, X, Eye, Download, Calendar, Book, Loader2, Video, Trash2, Edit } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  created_at: string;
-  file_url: string | null;
-  video_url: string | null;
-  department: string;
-}
-
-interface UserProfile {
-  id: string;
-  full_name: string | null;
-  department: string | null;
-  major: string | null;
-  student_id: string | null;
-  user_id: string;
-}
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { CollaborationInvites } from '@/components/CollaborationInvites';
 
 const Profile = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [userInfo, setUserInfo] = useState({
-    name: "",
-    department: "",
-    major: "",
-    studentId: ""
-  });
-
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
-  }, [user, authLoading, navigate]);
+  const [loading, setLoading] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [major, setMajor] = useState('');
+  const [studentId, setStudentId] = useState('');
+  const [department, setDepartment] = useState('');
 
   useEffect(() => {
     if (user) {
       fetchProfile();
-      fetchProjects();
     }
   }, [user]);
 
@@ -76,353 +38,130 @@ const Profile = () => {
       }
 
       if (data) {
-        setProfile(data);
-        setUserInfo({
-          name: data.full_name || "",
-          department: data.department || "",
-          major: data.major || "",
-          studentId: data.student_id || ""
-        });
+        setFullName(data.full_name || '');
+        setMajor(data.major || '');
+        setStudentId(data.student_id || '');
+        setDepartment(data.department || '');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const fetchProjects = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!user) return;
 
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setProjects(data || []);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!user) return;
-
+    setLoading(true);
     try {
       const { error } = await supabase
         .from('profiles')
         .upsert({
           user_id: user.id,
-          full_name: userInfo.name,
-          department: userInfo.department,
-          major: userInfo.major,
-          student_id: userInfo.studentId
-        }, {
-          onConflict: 'user_id'
+          full_name: fullName,
+          major,
+          student_id: studentId,
+          department
         });
 
       if (error) throw error;
 
       toast({
-        title: "Profile updated",
-        description: "Your profile information has been saved successfully.",
+        title: 'Profile updated successfully!',
+        description: 'Your profile information has been saved.',
       });
-      setIsEditing(false);
-      fetchProfile();
-    } catch (error) {
-      console.error('Error updating profile:', error);
+    } catch (error: any) {
       toast({
-        title: "Update failed",
-        description: "There was an error updating your profile. Please try again.",
-        variant: "destructive"
+        title: 'Error updating profile',
+        description: error.message,
+        variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
   };
-
-  const handleDeleteProject = async (projectId: string) => {
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', projectId)
-        .eq('user_id', user?.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Project deleted",
-        description: "Your project has been successfully deleted.",
-      });
-      
-      fetchProjects();
-    } catch (error) {
-      console.error('Error deleting project:', error);
-      toast({
-        title: "Delete failed",
-        description: "There was an error deleting your project. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleCancel = () => {
-    setUserInfo({
-      name: profile?.full_name || "",
-      department: profile?.department || "",
-      major: profile?.major || "",
-      studentId: profile?.student_id || ""
-    });
-    setIsEditing(false);
-  };
-
-  // Show loading while checking auth or loading profile
-  if (authLoading || loading || !user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-4">
-            Student Profile
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your profile and view your submitted projects
-          </p>
-        </div>
-
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="profile">Profile Information</TabsTrigger>
-            <TabsTrigger value="projects">My Projects</TabsTrigger>
-          </TabsList>
-
-          {/* Profile Tab */}
-          <TabsContent value="profile">
-            <Card className="shadow-elegant">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Avatar className="h-20 w-20">
-                      <AvatarImage src="" />
-                      <AvatarFallback className="text-lg bg-hue-gold text-hue-dark-navy">
-                        {(userInfo.name || user?.email || "U").split(' ').map(n => n[0]).join('').toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-2xl">{userInfo.name || user?.email}</CardTitle>
-                      <CardDescription className="text-lg">
-                        {user?.email}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    {!isEditing ? (
-                      <Button variant="outline" onClick={() => setIsEditing(true)}>
-                        <Edit3 className="h-4 w-4 mr-2" />
-                        Edit Profile
-                      </Button>
-                    ) : (
-                      <>
-                        <Button variant="outline" onClick={handleCancel}>
-                          <X className="h-4 w-4 mr-2" />
-                          Cancel
-                        </Button>
-                        <Button variant="hero" onClick={handleSave}>
-                          <Save className="h-4 w-4 mr-2" />
-                          Save Changes
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={userInfo.name}
-                      onChange={(e) => setUserInfo(prev => ({ ...prev, name: e.target.value }))}
-                      disabled={!isEditing}
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      value={user?.email || ""}
-                      disabled={true}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
-                    <Input
-                      id="department"
-                      value={userInfo.department}
-                      onChange={(e) => setUserInfo(prev => ({ ...prev, department: e.target.value }))}
-                      disabled={!isEditing}
-                      placeholder="Enter your department"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="major">Major</Label>
-                    <Input
-                      id="major"
-                      value={userInfo.major}
-                      onChange={(e) => setUserInfo(prev => ({ ...prev, major: e.target.value }))}
-                      disabled={!isEditing}
-                      placeholder="Enter your major"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="student-id">Student ID</Label>
-                    <Input
-                      id="student-id"
-                      value={userInfo.studentId}
-                      onChange={(e) => setUserInfo(prev => ({ ...prev, studentId: e.target.value }))}
-                      disabled={!isEditing}
-                      placeholder="Enter your student ID"
-                    />
-                  </div>
-                </div>
-
-                {/* Statistics */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-border">
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-hue-navy">{projects.length}</div>
-                    <div className="text-sm text-muted-foreground">Total Projects</div>
-                  </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <div className="text-2xl font-bold text-hue-navy">{projects.length}</div>
-                    <div className="text-sm text-muted-foreground">Published Projects</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Projects Tab */}
-          <TabsContent value="projects">
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">My Projects</h2>
-                  <Button variant="hero" asChild>
-                    <Link to="/upload">Upload New Project</Link>
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {projects.map((project) => (
-                    <Card key={project.id} className="hover:shadow-elegant transition-all duration-300 hover:-translate-y-1">
-                      <CardHeader>
-                        <div className="flex justify-between items-start mb-2">
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                            Published
-                          </Badge>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.location.href = `/edit-project/${project.id}`}
-                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Project</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete this project? This action cannot be undone and will permanently remove your project from the database.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => handleDeleteProject(project.id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Delete Project
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </div>
-                        <CardTitle className="text-lg line-clamp-2">{project.title}</CardTitle>
-                        <CardDescription className="line-clamp-2">
-                          {project.description}
-                        </CardDescription>
-                      </CardHeader>
-                      {project.file_url && (
-                        <div className="px-6 pb-2">
-                          <img 
-                            src={project.file_url} 
-                            alt={project.title}
-                            className="w-full h-32 object-cover rounded-md"
-                          />
-                        </div>
-                      )}
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            {new Date(project.created_at).toLocaleDateString()}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Department: {project.department}
-                          </div>
-                          {project.video_url && (
-                            <Button variant="outline" size="sm" className="w-full" asChild>
-                              <a href={project.video_url} target="_blank" rel="noopener noreferrer">
-                                <Video className="h-4 w-4 mr-2" />
-                                Watch Demo
-                              </a>
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                {projects.length === 0 && (
-                  <div className="text-center py-12">
-                    <Book className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Start by uploading your first project to showcase your work.
-                    </p>
-                    <Button variant="hero" asChild>
-                      <Link to="/upload">Upload Your First Project</Link>
-                    </Button>
-                  </div>
-                )}
+    <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <h1 className="text-3xl font-bold mb-8">Profile</h1>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+            <CardDescription>
+              Update your personal information
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                />
               </div>
-          </TabsContent>
-        </Tabs>
+
+              <div className="space-y-2">
+                <Label htmlFor="major">Major</Label>
+                <Input
+                  id="major"
+                  type="text"
+                  value={major}
+                  onChange={(e) => setMajor(e.target.value)}
+                  placeholder="Enter your major"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="studentId">Student ID</Label>
+                <Input
+                  id="studentId"
+                  type="text"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  placeholder="Enter your student ID"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Input
+                  id="department"
+                  type="text"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="Enter your department"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={user?.email || ''}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? 'Updating...' : 'Update Profile'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <CollaborationInvites />
       </div>
     </div>
   );
