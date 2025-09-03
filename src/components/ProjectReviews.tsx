@@ -52,15 +52,31 @@ export const ProjectReviews = ({ projectId, projectOwnerId }: ProjectReviewsProp
 
       if (error) throw error;
 
-      // Get reviewer names from auth.users metadata or use email
+      // Get reviewer names from profiles table
       const reviewsWithNames = await Promise.all(
         (reviewsData || []).map(async (review) => {
-          // For now, we'll use a placeholder name since we can't access profiles directly
-          // In a real app, you might store reviewer names in the reviews table
-          return {
-            ...review,
-            reviewer_name: 'Student' // Placeholder - could be improved by adding reviewer_name to reviews table
-          };
+          try {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('user_id', review.user_id)
+              .single();
+            
+            if (error) {
+              console.error('Error fetching profile for user:', review.user_id, error);
+            }
+            
+            return {
+              ...review,
+              reviewer_name: profile?.full_name || 'Student'
+            };
+          } catch (error) {
+            console.error('Error in reviewer name fetch:', error);
+            return {
+              ...review,
+              reviewer_name: 'Student'
+            };
+          }
         })
       );
 

@@ -107,6 +107,31 @@ const ProjectDetail = () => {
                     </div>
                   )}
 
+                  {/* Project Files/Images Section */}
+                  {project.file_url && (
+                    <div>
+                      <h3 className="font-semibold mb-2">Project Files</h3>
+                      {(() => {
+                        const fileUrl = project.file_url;
+                        const isImage = /\.(jpg|jpeg|png|gif|bmp|svg|webp)$/i.test(fileUrl);
+                        
+                        if (isImage) {
+                          return (
+                            <div className="mb-4">
+                              <img 
+                                src={fileUrl} 
+                                alt="Project preview" 
+                                className="max-w-full h-auto rounded-lg border shadow-sm"
+                                style={{ maxHeight: '400px' }}
+                              />
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-4">
                     {project.github_url && (
                       <Button variant="outline" asChild>
