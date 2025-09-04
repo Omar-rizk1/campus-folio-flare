@@ -13,6 +13,7 @@ type CollaborationInvite = Tables<'collaboration_invites'> & {
   projects: {
     title: string;
     creator_name: string | null;
+    user_id: string;
   } | null;
 };
 
@@ -31,15 +32,40 @@ export const CollaborationInvites: React.FC = () => {
         .from('collaboration_invites')
         .select(`
           *,
-          projects:project_id (
+          projects!inner (
             title,
-            creator_name
+            creator_name,
+            user_id
           )
         `)
         .eq('invitee_email', user.email)
         .eq('status', 'pending');
       
       if (error) throw error;
+      
+      // Get creator profiles for projects without creator_name
+      const projectsNeedingCreatorName = data?.filter(invite => 
+        !invite.projects?.creator_name && invite.projects?.user_id
+      ) || [];
+      
+      if (projectsNeedingCreatorName.length > 0) {
+        const creatorIds = projectsNeedingCreatorName.map(invite => invite.projects?.user_id).filter(Boolean);
+        const { data: creatorProfiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', creatorIds);
+          
+        // Merge creator names into the data
+        data?.forEach(invite => {
+          if (!invite.projects?.creator_name && invite.projects?.user_id) {
+            const creatorProfile = creatorProfiles?.find(p => p.user_id === invite.projects?.user_id);
+            if (creatorProfile?.full_name) {
+              invite.projects.creator_name = creatorProfile.full_name;
+            }
+          }
+        });
+      }
+      
       return data as CollaborationInvite[];
     },
     enabled: !!user?.email

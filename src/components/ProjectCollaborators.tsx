@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tables } from '@/integrations/supabase/types';
 
 type ProjectCollaborator = Tables<'project_collaborators'> & {
-  profiles: {
+  profile: {
     full_name: string | null;
   } | null;
 };
@@ -29,36 +29,38 @@ export const ProjectCollaborators: React.FC<ProjectCollaboratorsProps> = ({ proj
   const queryClient = useQueryClient();
   const [inviteEmail, setInviteEmail] = useState('');
 
-  // Fetch collaborators
+  // Fetch collaborators with their profile information
   const { data: collaborators } = useQuery({
     queryKey: ['project-collaborators', projectId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: collaboratorData, error } = await supabase
         .from('project_collaborators')
         .select('*')
         .eq('project_id', projectId);
       
       if (error) throw error;
-      return data;
-    }
-  });
-
-  // Fetch profile names for collaborators
-  const { data: profiles } = useQuery({
-    queryKey: ['collaborator-profiles', collaborators?.map(c => c.user_id)],
-    queryFn: async () => {
-      if (!collaborators?.length) return [];
       
-      const userIds = collaborators.map(c => c.user_id);
-      const { data, error } = await supabase
+      if (!collaboratorData?.length) return [];
+      
+      // Fetch profiles for all collaborators
+      const userIds = collaboratorData.map(c => c.user_id);
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('user_id, full_name')
         .in('user_id', userIds);
       
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!collaborators?.length
+      if (profileError) {
+        console.warn('Could not fetch profiles:', profileError);
+      }
+      
+      // Merge profile data with collaborator data
+      const collaboratorsWithProfiles = collaboratorData.map(collaborator => ({
+        ...collaborator,
+        profile: profileData?.find(p => p.user_id === collaborator.user_id) || null
+      }));
+      
+      return collaboratorsWithProfiles;
+    }
   });
 
   // Fetch pending invites
@@ -164,13 +166,12 @@ export const ProjectCollaborators: React.FC<ProjectCollaboratorsProps> = ({ proj
         {/* Current Collaborators */}
         <div className="space-y-2">
           {collaborators?.map((collaborator) => {
-            const profile = profiles?.find(p => p.user_id === collaborator.user_id);
             return (
               <div key={collaborator.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
                   <div>
                     <p className="font-medium">
-                      {profile?.full_name || 'Unknown User'}
+                      {collaborator.profile?.full_name || 'User'}
                     </p>
                     <Badge variant={collaborator.role === 'owner' ? 'default' : 'secondary'}>
                       {collaborator.role}
