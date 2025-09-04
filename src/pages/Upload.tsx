@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload as UploadIcon, Image, Video, AlertCircle, Github, FileText, X, UserPlus, Mail } from "lucide-react";
+import { Upload as UploadIcon, Image, Video, AlertCircle, Github, FileText, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,9 +28,6 @@ const Upload = () => {
     githubLink: "",
     files: [] as File[]
   });
-  
-  const [collaboratorEmail, setCollaboratorEmail] = useState("");
-  const [invitedCollaborators, setInvitedCollaborators] = useState<string[]>([]);
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const {
       name,
@@ -78,53 +75,6 @@ const Upload = () => {
       ...prev,
       files: prev.files.filter((_, i) => i !== index)
     }));
-  };
-
-  const addCollaborator = () => {
-    if (!collaboratorEmail.trim()) return;
-    
-    // Basic email validation
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(collaboratorEmail)) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Check if email is already added
-    if (invitedCollaborators.includes(collaboratorEmail.toLowerCase())) {
-      toast({
-        title: "Already added",
-        description: "This email is already in your collaborators list.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Check if it's the user's own email
-    if (collaboratorEmail.toLowerCase() === user?.email?.toLowerCase()) {
-      toast({
-        title: "Cannot invite yourself",
-        description: "You cannot invite your own email address.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setInvitedCollaborators(prev => [...prev, collaboratorEmail.toLowerCase()]);
-    setCollaboratorEmail("");
-    
-    toast({
-      title: "Collaborator added",
-      description: "Email added to your collaborators list. They will receive an invitation after you submit the project.",
-    });
-  };
-
-  const removeCollaborator = (email: string) => {
-    setInvitedCollaborators(prev => prev.filter(e => e !== email));
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,51 +126,24 @@ const Upload = () => {
       }
 
       // Save project to database
-      const { data: projectData, error: dbError } = await supabase
-        .from('projects')
-        .insert({
-          user_id: user.id,
-          title: formData.title,
-          description: formData.description,
-          department: formData.major,
-          level: formData.level,
-          file_url: primaryFileUrl,
-          files_urls: uploadedFiles,
-          video_url: formData.videoLink || null,
-          github_url: formData.githubLink || null,
-          creator_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown'
-        })
-        .select('id')
-        .single();
-        
+      const {
+        error: dbError
+      } = await supabase.from('projects').insert({
+        user_id: user.id,
+        title: formData.title,
+        description: formData.description,
+        department: formData.major,
+        level: formData.level,
+        file_url: primaryFileUrl,
+        // Backward compatibility
+        files_urls: uploadedFiles,
+        // New multiple files support
+        video_url: formData.videoLink || null,
+        github_url: formData.githubLink || null,
+        creator_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Unknown'
+      });
       if (dbError) {
         throw dbError;
-      }
-
-      // Send collaboration invites if any collaborators were added
-      if (invitedCollaborators.length > 0 && projectData) {
-        const invitePromises = invitedCollaborators.map(email =>
-          supabase.from('collaboration_invites').insert({
-            project_id: projectData.id,
-            inviter_id: user.id,
-            invitee_email: email
-          })
-        );
-
-        try {
-          await Promise.all(invitePromises);
-          toast({
-            title: "Invitations sent!",
-            description: `${invitedCollaborators.length} collaboration invitation(s) have been sent.`,
-          });
-        } catch (inviteError) {
-          console.error('Error sending invitations:', inviteError);
-          toast({
-            title: "Project uploaded but invites failed",
-            description: "Your project was uploaded successfully, but some invitations could not be sent.",
-            variant: "destructive"
-          });
-        }
       }
       toast({
         title: "Project uploaded successfully!",
@@ -237,10 +160,6 @@ const Upload = () => {
         githubLink: "",
         files: []
       });
-      
-      // Reset collaboration data
-      setCollaboratorEmail("");
-      setInvitedCollaborators([]);
 
       // Reset file input
       const fileInput = document.getElementById("file-upload") as HTMLInputElement;
@@ -371,79 +290,6 @@ const Upload = () => {
                       Optional: Add a link to your project's GitHub repository
                     </p>
                   </div>
-                </div>
-              </div>
-
-              {/* Collaborators Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <UserPlus className="h-5 w-5 text-muted-foreground" />
-                  <Label>Invite Collaborators (Optional)</Label>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <div className="flex-1 flex items-start gap-2">
-                      <Mail className="h-5 w-5 text-muted-foreground mt-3" />
-                      <div className="flex-1">
-                        <Input
-                          value={collaboratorEmail}
-                          onChange={(e) => setCollaboratorEmail(e.target.value)}
-                          placeholder="Enter collaborator's email"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              addCollaborator();
-                            }
-                          }}
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Add team members who can contribute to this project
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addCollaborator}
-                      disabled={!collaboratorEmail.trim()}
-                      className="mt-0"
-                    >
-                      Add
-                    </Button>
-                  </div>
-
-                  {/* Invited Collaborators List */}
-                  {invitedCollaborators.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Invited Collaborators ({invitedCollaborators.length}):
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {invitedCollaborators.map((email) => (
-                          <div
-                            key={email}
-                            className="bg-muted border rounded-md px-3 py-1 text-sm flex items-center gap-2"
-                          >
-                            <Mail className="h-3 w-3" />
-                            <span>{email}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeCollaborator(email)}
-                              className="h-4 w-4 p-0 hover:bg-red-100"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        These collaborators will receive email invitations after you submit the project.
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
 
